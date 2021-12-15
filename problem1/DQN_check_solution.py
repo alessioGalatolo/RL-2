@@ -72,9 +72,8 @@ for i in EPISODES:
 
         # _, action = torch.max(q_values, axis=1)
         with torch.no_grad():
-            q_values = agent.get_qvals(state, q_network)
+            action = agent.forward(state, q_network)
         
-        action = torch.argmax(q_values)
         next_state, reward, done, _ = env.step(action.item())
 
         if visualize:
