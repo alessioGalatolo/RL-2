@@ -96,12 +96,12 @@ class CleverAgent(RandomAgent):
         self.epsilon = max(self.eps_min, new_epsilon)
 
     def forward(self, state):
-        state = torch.Tensor(state).view(1,-1).expand(self.n_actions, self.dim_state)
-        random_action = super().forward(state)
-        # Each column is a vector [onehot_action, s_1, ..., s_8]
-        state_action_tensor = torch.cat((self.actions_tensor, state), dim=1)
-        q_vals = self.q_network(state_action_tensor)
-        clever_action = torch.argmax(q_vals)
         if random() > self.epsilon:
+            state = torch.Tensor(state).view(1,-1).expand(self.n_actions, self.dim_state)
+            # Each column is a vector [onehot_action, s_1, ..., s_8]
+            state_action_tensor = torch.cat((self.actions_tensor, state), dim=1)
+            q_vals = self.q_network(state_action_tensor)
+            clever_action = torch.argmax(q_vals)        
             return clever_action
+        random_action = super().forward(state)
         return random_action

@@ -61,11 +61,8 @@ episode_number_of_steps = []   # this list contains the number of steps per epis
 # Random agent initialization
 agent = CleverAgent(n_actions, dim_state, eps_max, eps_min, decay_period=int(0.9*N_episodes))
 random_agent = RandomAgent(n_actions)
-# Training process
 
-# trange is an alternative to range in python, from the tqdm library
-# It shows a nice progression bar that you can update with useful information
-EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
+# Training process
 replay_buffer = deque(maxlen=replay_buffer_size)
 
 #----------------------------------------------------------------------------
@@ -83,6 +80,10 @@ while len(replay_buffer) < replay_buffer_size:
         replay_buffer.append((state, action, reward, next_state))
         # Update state for next iteration
         state = next_state
+
+# trange is an alternative to range in python, from the tqdm library
+# It shows a nice progression bar that you can update with useful information
+EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
 
 #----------------------------------------------------------------------------
 #-------------------------- Training episodes -------------------------------
