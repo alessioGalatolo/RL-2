@@ -23,6 +23,7 @@ from tqdm import trange
 from DQN_problem import *
 q_network.load_from_checkpoint(device)
 visualize = True
+# visualize = False
 #---------- End added by us ------------
 
 def running_average(x, N):

@@ -45,13 +45,13 @@ env.reset()
 
 # Parameters
 replay_buffer_size = 5000  # set in range of 5000-30000
-batch_size_train = 8  # set in range 4-128
+batch_size_train = 16  # set in range 4-128
 max_lr = 1e-3 # set in range 1e-3 to 1e-4
 min_lr = 1e-4
 CLIP_VAL = 1.5 # a value between 0.5 and 2
 C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
 N_episodes = 200                            # set in range 100 to 1000
-discount_factor = 0.7                       # Value of the discount factor
+discount_factor = 0.8                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
 n_actions = env.action_space.n               # Number of available actions
 dim_state = len(env.observation_space.high)  # State dimensionality
@@ -73,7 +73,7 @@ else:
     device = torch.device('cpu')
 
 # Random agent initialization
-agent = CleverAgent(n_actions, dim_state, device, eps_max, eps_min, decay_period=decay_period)
+agent = CleverAgent(n_actions, dim_state, device, eps_max, eps_min, decay_period=decay_period, decay_method='linear')
 random_agent = RandomAgent(n_actions)
 
 # Training process
@@ -81,7 +81,7 @@ replay_buffer = deque(maxlen=replay_buffer_size)
 
 # Initialize networks
 q_network = Model(d_in = n_actions + dim_state,
-                               hidden_layers = [16, 16],
+                               hidden_layers = [32, 32],
                                d_out = 1)
 target_network = deepcopy(q_network)
 q_network.to(device)
@@ -99,6 +99,7 @@ if __name__ == '__main__':
     #----------------- Fill replay buffer with random experiences ---------------
     print('Filling replay buffer with random experiences')
 
+# FIXME: Isn't it really wierd how big the buffer of random experiences is??
     while len(replay_buffer) < replay_buffer_size:
         # Reset environment data and initialize variables
         done = False
@@ -156,7 +157,7 @@ if __name__ == '__main__':
             train_loss.backward()
             clip_grad_norm_(q_network.parameters(), CLIP_VAL)
             optim_q.step()
-            train_loss_list.append(train_loss.detach().cpu())
+            train_loss_list.append(train_loss.detach().cpu().numpy())
 
             if target_net_counter==C_target:
                 target_net_counter = 1
@@ -183,8 +184,8 @@ if __name__ == '__main__':
         # (episode number, total reward of the last episode, total number of Steps
         # of the last episode, average reward, average number of steps)
         EPISODES.set_description(
-            "LR = {:.1e} - Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
-                scheduler.get_last_lr()[0],
+            "LR = {:.1e} - Eps = {:.2f} - Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
+                scheduler.get_last_lr()[0], agent.epsilon,
                 i, total_episode_reward, t,
                 running_average(episode_reward_list, n_ep_running_average)[-1],
                 running_average(episode_number_of_steps, n_ep_running_average)[-1]))
@@ -196,7 +197,8 @@ if __name__ == '__main__':
     # Plot loss
     plt.plot(train_loss_list)
     plt.title('Train loss vs step')
-    plt.show()
+    plt.show(block=True)
+    plt.savefig('loss.png')
 
     # Plot Rewards and steps
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
