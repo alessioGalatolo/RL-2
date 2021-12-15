@@ -21,6 +21,7 @@ import gym
 import torch
 import matplotlib.pyplot as plt
 from tqdm import trange
+import tqdm
 from DQN_agent import RandomAgent, CleverAgent
 
 
@@ -59,7 +60,7 @@ episode_number_of_steps = []   # this list contains the number of steps per epis
 
 # Random agent initialization
 agent = CleverAgent(n_actions, dim_state, eps_max, eps_min, decay_period=int(0.9*N_episodes))
-# agent = RandomAgent(n_actions)
+random_agent = RandomAgent(n_actions)
 # Training process
 
 # trange is an alternative to range in python, from the tqdm library
@@ -67,6 +68,24 @@ agent = CleverAgent(n_actions, dim_state, eps_max, eps_min, decay_period=int(0.9
 EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
 replay_buffer = deque(maxlen=replay_buffer_size)
 
+#----------------------------------------------------------------------------
+#----------------- Fill replay buffer with random experiences ---------------
+print('Filling replay buffer with random experiences')
+
+while len(replay_buffer) < replay_buffer_size:
+    # Reset environment data and initialize variables
+    done = False
+    state = env.reset()
+    while not done:
+        # Take a random action
+        action = random_agent.forward(state)
+        next_state, reward, done, _ = env.step(int(action.item()))
+        replay_buffer.append((state, action, reward, next_state))
+        # Update state for next iteration
+        state = next_state
+
+#----------------------------------------------------------------------------
+#-------------------------- Training episodes -------------------------------
 debug = True
 for i in EPISODES:
     # Reset environment data and initialize variables
