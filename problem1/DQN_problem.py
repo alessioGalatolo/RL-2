@@ -145,14 +145,13 @@ if __name__ == '__main__':
             for experience in sample(replay_buffer, batch_size_train):
                 state_train, action_train, reward_train, next_state_train, done_train = experience
 
-                if not done_train:
-                    with torch.no_grad():
-                        target_qvals = agent.get_qvals(next_state_train, target_network)
-                    target_val = reward_train + discount_factor * torch.max(target_qvals)
-                else: target_val = reward_train
-                
+                with torch.no_grad():
+                    target_qvals = agent.get_qvals(next_state_train, target_network)
+                target_val = reward_train + discount_factor * torch.max(target_qvals) * (1 - done_train)
+
                 q_val = agent.get_qvals(state_train, q_network, int(action_train.item()))
                 train_loss = train_loss + torch.pow(target_val - q_val, 2)
+            
             train_loss = train_loss * (1 / batch_size_train)
             train_loss.backward()
             clip_grad_norm_(q_network.parameters(), CLIP_VAL)
