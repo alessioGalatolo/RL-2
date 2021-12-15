@@ -62,7 +62,7 @@ class RandomAgent(Agent):
 
 
 class CleverAgent(RandomAgent):
-    def __init__(self, n_actions: int, dim_state, eps_max=0.99, eps_min=0.05,
+    def __init__(self, n_actions: int, dim_state: int, device:torch.DeviceObjType, eps_max=0.99, eps_min=0.05,
                  decay_period=1, decay_method='exponential'):
         super().__init__(n_actions)
         self.epsilon = eps_max
@@ -72,8 +72,9 @@ class CleverAgent(RandomAgent):
         self.decay_method = decay_method
         self.n_actions = n_actions
         self.dim_state = dim_state
+        self.device = device
         
-        self.actions_tensor = torch.eye(n=n_actions, m=n_actions)
+        self.actions_tensor = torch.eye(n=n_actions, m=n_actions).to(self.device)
 
     def decay_epsilon(self, iteration):
         new_epsilon = 0
@@ -89,20 +90,20 @@ class CleverAgent(RandomAgent):
             print(f'Decay method {self.decay_method} not recognized')
         self.epsilon = max(self.eps_min, new_epsilon)
     
-    def get_qvals(self, state, q_network, actions = None):
+    def get_qvals(self, state, network, actions = None):
         if actions is None:
             actions = self.actions_tensor
             n_actions = self.n_actions
         elif isinstance(actions, int) and actions >= 0 and actions < self.n_actions:
-            actions = self.actions_tensor[actions].unsqueeze(0)
+            actions = self.actions_tensor[actions].unsqueeze(0).to(self.device)
             n_actions = 1
         else:
             raise NotImplementedError()
 
-        state = torch.Tensor(state).view(1,-1).expand(n_actions, self.dim_state)
+        state = torch.Tensor(state).view(1,-1).expand(n_actions, self.dim_state).to(self.device)
         # Each column is a vector [onehot_action, s_1, ..., s_8]
         state_action_tensor = torch.cat((actions, state), dim=1)
-        q_vals = q_network(state_action_tensor)
+        q_vals = network(state_action_tensor)
         return q_vals
 
     def forward(self, state, q_network):

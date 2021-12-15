@@ -63,20 +63,29 @@ episode_reward_list = []       # this list contains the total reward per episode
 episode_number_of_steps = []   # this list contains the number of steps per episode
 train_loss_list = []
 
+# Check if GPU is available
+if torch.cuda.is_available():
+    print('>>> Using GPU.')
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
+
 # Random agent initialization
-agent = CleverAgent(n_actions, dim_state, eps_max, eps_min, decay_period=int(0.9*N_episodes))
+agent = CleverAgent(n_actions, dim_state, device, eps_max, eps_min, decay_period=int(0.9*N_episodes))
 random_agent = RandomAgent(n_actions)
 
 # Training process
 replay_buffer = deque(maxlen=replay_buffer_size)
 
-#Initialize networks
+# Initialize networks
 q_network = Model(d_in = n_actions + dim_state,
                                hidden_layers = [128],
                                d_out = 1)
 target_network = deepcopy(q_network)
+q_network.to(device)
+target_network.to(device)
 
-#Initialize optimizers
+# Initialize optimizers
 optim_q = torch.optim.Adam(q_network.parameters(), lr=learning_rate)
 
 #----------------------------------------------------------------------------
@@ -128,7 +137,6 @@ for i in EPISODES:
         optim_q.zero_grad()
         for experience in sample(replay_buffer, batch_size_train):
             state_train, action_train, reward_train, next_state_train, done_train = experience
-            one_hot_action = agent.actions_tensor[int(action.item())].view(1,-1)
 
             if not done_train:
                 with torch.no_grad():
@@ -173,6 +181,14 @@ for i in EPISODES:
             running_average(episode_reward_list, n_ep_running_average)[-1],
             running_average(episode_number_of_steps, n_ep_running_average)[-1]))
 
+q_network.save_checkpoint()
+
+# TODO: save plots for report
+
+# Plot loss
+plt.plot(train_loss_list)
+plt.title('Train loss vs step')
+plt.show()
 
 # Plot Rewards and steps
 fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
