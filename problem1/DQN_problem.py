@@ -19,6 +19,7 @@ from random import sample
 import numpy as np
 import gym
 import torch
+from torch.nn.utils import clip_grad_norm_
 import matplotlib.pyplot as plt
 from tqdm import trange
 import tqdm
@@ -44,8 +45,10 @@ env.reset()
 
 # Parameters
 replay_buffer_size = 5000  # set in range of 5000-30000
-training_batch = 4  # set in range 4-128
+batch_size_train = 4  # set in range 4-128
 learning_rate = 1e-3 # set in range 1e-3 to 1e-4
+CLIP_VAL = 1.5 # a value between 0.5 and 2
+C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
 N_episodes = 100                             # set in range 100 to 1000
 discount_factor = 0.95                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
@@ -58,6 +61,7 @@ eps_min = 0.05
 # the average number of steps per episode
 episode_reward_list = []       # this list contains the total reward per episode
 episode_number_of_steps = []   # this list contains the number of steps per episode
+train_loss_list = []
 
 # Random agent initialization
 agent = CleverAgent(n_actions, dim_state, eps_max, eps_min, decay_period=int(0.9*N_episodes))
@@ -72,6 +76,9 @@ q_network = Model(d_in = n_actions + dim_state,
                                d_out = 1)
 target_network = deepcopy(q_network)
 
+#Initialize optimizers
+optim_q = torch.optim.Adam(q_network.parameters(), lr=learning_rate)
+
 #----------------------------------------------------------------------------
 #----------------- Fill replay buffer with random experiences ---------------
 print('Filling replay buffer with random experiences')
@@ -84,7 +91,7 @@ while len(replay_buffer) < replay_buffer_size:
         # Take a random action
         action = random_agent.forward(state)
         next_state, reward, done, _ = env.step(int(action.item()))
-        replay_buffer.append((state, action, reward, next_state))
+        replay_buffer.append((state, action, reward, next_state, done))
         # Update state for next iteration
         state = next_state
 
@@ -94,7 +101,8 @@ EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
 
 #----------------------------------------------------------------------------
 #-------------------------- Training episodes -------------------------------
-debug = True
+debug = False
+target_net_counter = 1
 for i in EPISODES:
     # Reset environment data and initialize variables
     done = False
@@ -112,13 +120,41 @@ for i in EPISODES:
         # will be True if you reached the goal position,
         # False otherwise
         next_state, reward, done, _ = env.step(int(action.item()))
-        replay_buffer.append((state, action, reward, next_state))
+        replay_buffer.append((state, action, reward, next_state, done))
+        # Sample N experience from buffer and update q_net weights
+
+        train_loss = 0
+        # FIXME: maybe implent batch update instead
+        optim_q.zero_grad()
+        for experience in sample(replay_buffer, batch_size_train):
+            state_train, action_train, reward_train, next_state_train, done_train = experience
+            one_hot_action = agent.actions_tensor[int(action.item())].view(1,-1)
+
+            if not done_train:
+                with torch.no_grad():
+                    target_qvals = agent.get_qvals(next_state_train, target_network)
+                target_val = reward_train + discount_factor * torch.max(target_qvals)
+            else: target_val = reward_train
+
+            q_val = torch.max(agent.get_qvals(state_train, q_network, int(action_train.item())))
+            train_loss = train_loss + torch.pow(target_val - q_val, 2)
+        train_loss = train_loss * (1 / batch_size_train)
+        train_loss.backward()
+        clip_grad_norm_(q_network.parameters(), CLIP_VAL)
+        optim_q.step()
+        train_loss_list.append(train_loss.detach().cpu())
+
+        if target_net_counter==C_target:
+            target_net_counter = 1
+            q_net_state_dict = q_network.state_dict()
+            target_network.load_state_dict(q_net_state_dict)
+
         # Update episode reward
         total_episode_reward += reward
-
         # Update state for next iteration
         state = next_state
         t += 1
+        target_net_counter += 1
 
     agent.decay_epsilon(i)
     # Append episode reward and total number of steps

@@ -47,12 +47,13 @@ class RandomAgent(Agent):
         super().__init__(n_actions)
 
     def forward(self, state: np.ndarray) -> int:
-        ''' Compute an action uniformly at random across n_actions possible
-            choices
 
-            Returns:
-                action (int): the random action
-        '''
+        # Compute an action uniformly at random across n_actions possible
+        #     choices
+
+        # Returns:
+        #     action (int): the random action
+
         self.last_action = torch.Tensor(np.random.randint(0, self.n_actions, size=(1,)))
         return self.last_action
     
@@ -87,14 +88,27 @@ class CleverAgent(RandomAgent):
         else:
             print(f'Decay method {self.decay_method} not recognized')
         self.epsilon = max(self.eps_min, new_epsilon)
+    
+    def get_qvals(self, state, q_network, actions = None):
+        if actions is None:
+            actions = self.actions_tensor
+            n_actions = self.n_actions
+        elif isinstance(actions, int) and actions >= 0 and actions < self.n_actions:
+            actions = self.actions_tensor[actions].unsqueeze(0)
+            n_actions = 1
+        else:
+            raise NotImplementedError()
+
+        state = torch.Tensor(state).view(1,-1).expand(n_actions, self.dim_state)
+        # Each column is a vector [onehot_action, s_1, ..., s_8]
+        state_action_tensor = torch.cat((actions, state), dim=1)
+        q_vals = q_network(state_action_tensor)
+        return q_vals
 
     def forward(self, state, q_network):
         if random() > self.epsilon:
-            state = torch.Tensor(state).view(1,-1).expand(self.n_actions, self.dim_state)
-            # Each column is a vector [onehot_action, s_1, ..., s_8]
-            state_action_tensor = torch.cat((self.actions_tensor, state), dim=1)
-            q_vals = q_network(state_action_tensor)
-            clever_action = torch.argmax(q_vals)        
+            q_vals = self.get_qvals(state, q_network)
+            clever_action = torch.argmax(q_vals)
             return clever_action
         random_action = super().forward(state)
         return random_action
