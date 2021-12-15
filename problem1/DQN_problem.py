@@ -23,7 +23,8 @@ import matplotlib.pyplot as plt
 from tqdm import trange
 import tqdm
 from DQN_agent import RandomAgent, CleverAgent
-
+from network import Model
+from copy import deepcopy
 
 def running_average(x, N):
     ''' Function used to compute the running average
@@ -65,6 +66,12 @@ random_agent = RandomAgent(n_actions)
 # Training process
 replay_buffer = deque(maxlen=replay_buffer_size)
 
+#Initialize networks
+q_network = Model(d_in = n_actions + dim_state,
+                               hidden_layers = [128],
+                               d_out = 1)
+target_network = deepcopy(q_network)
+
 #----------------------------------------------------------------------------
 #----------------- Fill replay buffer with random experiences ---------------
 print('Filling replay buffer with random experiences')
@@ -96,7 +103,7 @@ for i in EPISODES:
     t = 0
     while not done:
         # Take a random action
-        action = agent.forward(state)
+        action = agent.forward(state, q_network)
 
         if debug and t%8 == 0:
             env.render()

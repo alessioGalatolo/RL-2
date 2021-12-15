@@ -16,11 +16,7 @@
 # Load packages
 import numpy as np
 import torch
-from copy import deepcopy
 from random import random
-
-from network import Model
-
 
 class Agent():
     ''' Base agent class, used as a parent class
@@ -75,10 +71,7 @@ class CleverAgent(RandomAgent):
         self.decay_method = decay_method
         self.n_actions = n_actions
         self.dim_state = dim_state
-        self.q_network = Model(d_in = n_actions + dim_state,
-                               hidden_layers = [128],
-                               d_out = 1)
-        self.target_network = deepcopy(self.q_network)
+        
         self.actions_tensor = torch.eye(n=n_actions, m=n_actions)
 
     def decay_epsilon(self, iteration):
@@ -95,12 +88,12 @@ class CleverAgent(RandomAgent):
             print(f'Decay method {self.decay_method} not recognized')
         self.epsilon = max(self.eps_min, new_epsilon)
 
-    def forward(self, state):
+    def forward(self, state, q_network):
         if random() > self.epsilon:
             state = torch.Tensor(state).view(1,-1).expand(self.n_actions, self.dim_state)
             # Each column is a vector [onehot_action, s_1, ..., s_8]
             state_action_tensor = torch.cat((self.actions_tensor, state), dim=1)
-            q_vals = self.q_network(state_action_tensor)
+            q_vals = q_network(state_action_tensor)
             clever_action = torch.argmax(q_vals)        
             return clever_action
         random_action = super().forward(state)
