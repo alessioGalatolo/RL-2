@@ -106,8 +106,8 @@ class CleverAgent(RandomAgent):
         q_vals = network(state_action_tensor)
         return q_vals
 
-    def forward(self, state, q_network):
-        if random() > self.epsilon:
+    def forward(self, state, q_network, deterministic=False):
+        if random() > self.epsilon * (1 - deterministic):
             q_vals = self.get_qvals(state, q_network)
             clever_action = torch.argmax(q_vals)
             return clever_action
