@@ -45,17 +45,19 @@ env.reset()
 
 # Parameters
 replay_buffer_size = 5000  # set in range of 5000-30000
-batch_size_train = 4  # set in range 4-128
-learning_rate = 1e-3 # set in range 1e-3 to 1e-4
+batch_size_train = 8  # set in range 4-128
+max_lr = 1e-3 # set in range 1e-3 to 1e-4
+min_lr = 1e-4
 CLIP_VAL = 1.5 # a value between 0.5 and 2
 C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
-N_episodes = 100                             # set in range 100 to 1000
-discount_factor = 0.95                       # Value of the discount factor
+N_episodes = 200                            # set in range 100 to 1000
+discount_factor = 0.7                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
 n_actions = env.action_space.n               # Number of available actions
 dim_state = len(env.observation_space.high)  # State dimensionality
 eps_max = 0.99
 eps_min = 0.05
+decay_period=int(0.9*N_episodes)
 
 # We will use these variables to compute the average episodic reward and
 # the average number of steps per episode
@@ -71,7 +73,7 @@ else:
     device = torch.device('cpu')
 
 # Random agent initialization
-agent = CleverAgent(n_actions, dim_state, device, eps_max, eps_min, decay_period=int(0.9*N_episodes))
+agent = CleverAgent(n_actions, dim_state, device, eps_max, eps_min, decay_period=decay_period)
 random_agent = RandomAgent(n_actions)
 
 # Training process
@@ -79,7 +81,7 @@ replay_buffer = deque(maxlen=replay_buffer_size)
 
 # Initialize networks
 q_network = Model(d_in = n_actions + dim_state,
-                               hidden_layers = [128],
+                               hidden_layers = [16, 16],
                                d_out = 1)
 target_network = deepcopy(q_network)
 q_network.to(device)
@@ -88,7 +90,10 @@ target_network.to(device)
 
 if __name__ == '__main__':
     # Initialize optimizers
-    optim_q = torch.optim.Adam(q_network.parameters(), lr=learning_rate)
+    optim_q = torch.optim.Adam(q_network.parameters(), lr=max_lr)
+
+    # Initialize scheduler
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim_q, decay_period, eta_min = min_lr)
 
     #----------------------------------------------------------------------------
     #----------------- Fill replay buffer with random experiences ---------------
@@ -145,8 +150,8 @@ if __name__ == '__main__':
                         target_qvals = agent.get_qvals(next_state_train, target_network)
                     target_val = reward_train + discount_factor * torch.max(target_qvals)
                 else: target_val = reward_train
-
-                q_val = torch.max(agent.get_qvals(state_train, q_network, int(action_train.item())))
+                
+                q_val = agent.get_qvals(state_train, q_network, int(action_train.item()))
                 train_loss = train_loss + torch.pow(target_val - q_val, 2)
             train_loss = train_loss * (1 / batch_size_train)
             train_loss.backward()
@@ -167,6 +172,7 @@ if __name__ == '__main__':
             target_net_counter += 1
 
         agent.decay_epsilon(i)
+        scheduler.step()
         # Append episode reward and total number of steps
         episode_reward_list.append(total_episode_reward)
         episode_number_of_steps.append(t)
@@ -178,7 +184,8 @@ if __name__ == '__main__':
         # (episode number, total reward of the last episode, total number of Steps
         # of the last episode, average reward, average number of steps)
         EPISODES.set_description(
-            "Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
+            "LR = {:.1e} - Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
+                scheduler.get_last_lr()[0],
                 i, total_episode_reward, t,
                 running_average(episode_reward_list, n_ep_running_average)[-1],
                 running_average(episode_number_of_steps, n_ep_running_average)[-1]))
