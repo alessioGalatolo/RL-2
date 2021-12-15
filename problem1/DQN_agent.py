@@ -57,7 +57,7 @@ class RandomAgent(Agent):
             Returns:
                 action (int): the random action
         '''
-        self.last_action = np.random.randint(0, self.n_actions)
+        self.last_action = torch.Tensor(np.random.randint(0, self.n_actions, size=(1,)))
         return self.last_action
     
     def decay_epsilon(self, iteration):
@@ -79,7 +79,7 @@ class CleverAgent(RandomAgent):
                                hidden_layers = [128],
                                d_out = 1)
         self.target_network = deepcopy(self.q_network)
-        self.actions_tensor = torch.eye(n=n_actions,m=n_actions)
+        self.actions_tensor = torch.eye(n=n_actions, m=n_actions)
 
     def decay_epsilon(self, iteration):
         new_epsilon = 0
@@ -101,7 +101,7 @@ class CleverAgent(RandomAgent):
         # Each column is a vector [onehot_action, s_1, ..., s_8]
         state_action_tensor = torch.cat((self.actions_tensor, state), dim=1)
         q_vals = self.q_network(state_action_tensor)
-        clever_action = torch.argmax(q_vals).item()
+        clever_action = torch.argmax(q_vals)
         if random() > self.epsilon:
             return clever_action
         return random_action
