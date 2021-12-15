@@ -19,7 +19,7 @@ import torch
 from copy import deepcopy
 from random import random
 
-from problem1.network import Model
+from network import Model
 
 
 class Agent():
@@ -59,6 +59,9 @@ class RandomAgent(Agent):
         '''
         self.last_action = np.random.randint(0, self.n_actions)
         return self.last_action
+    
+    def decay_epsilon(self, iteration):
+        pass
 
 
 class CleverAgent(RandomAgent):
@@ -71,10 +74,12 @@ class CleverAgent(RandomAgent):
         self.decay_period = decay_period
         self.decay_method = decay_method
         self.n_actions = n_actions
-        self.q_network = Model(d_in=n_actions*dim_state,
-                               hidden_layers=[128],
-                               d_out=1)
+        self.dim_state = dim_state
+        self.q_network = Model(d_in = n_actions + dim_state,
+                               hidden_layers = [128],
+                               d_out = 1)
         self.target_network = deepcopy(self.q_network)
+        self.actions_tensor = torch.eye(n=n_actions,m=n_actions)
 
     def decay_epsilon(self, iteration):
         new_epsilon = 0
@@ -91,11 +96,12 @@ class CleverAgent(RandomAgent):
         self.epsilon = max(self.eps_min, new_epsilon)
 
     def forward(self, state):
-        random_action = super().forward()
-        input = torch.Tensor(state)
-        torch.cat([inp])
-        self.q_network(state)
-        clever_action = ...
+        state = torch.Tensor(state).view(1,-1).expand(self.n_actions, self.dim_state)
+        random_action = super().forward(state)
+        # Each column is a vector [onehot_action, s_1, ..., s_8]
+        state_action_tensor = torch.cat((self.actions_tensor, state), dim=1)
+        q_vals = self.q_network(state_action_tensor)
+        clever_action = torch.argmax(q_vals).item()
         if random() > self.epsilon:
             return clever_action
         return random_action

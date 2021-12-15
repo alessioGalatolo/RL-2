@@ -21,8 +21,7 @@ import gym
 import torch
 import matplotlib.pyplot as plt
 from tqdm import trange
-from DQN_agent import RandomAgent
-from problem1.DQN_agent import CleverAgent
+from DQN_agent import RandomAgent, CleverAgent
 
 
 def running_average(x, N):
@@ -60,7 +59,7 @@ episode_number_of_steps = []   # this list contains the number of steps per epis
 
 # Random agent initialization
 agent = CleverAgent(n_actions, dim_state, eps_max, eps_min, decay_period=int(0.9*N_episodes))
-
+# agent = RandomAgent(n_actions)
 # Training process
 
 # trange is an alternative to range in python, from the tqdm library
@@ -68,7 +67,7 @@ agent = CleverAgent(n_actions, dim_state, eps_max, eps_min, decay_period=int(0.9
 EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
 replay_buffer = deque(maxlen=replay_buffer_size)
 
-
+debug = True
 for i in EPISODES:
     # Reset environment data and initialize variables
     done = False
@@ -79,7 +78,9 @@ for i in EPISODES:
         # Take a random action
         action = agent.forward(state)
 
-        env.render()
+        if debug and t%8 == 0:
+            env.render()
+            breakpoint=True
         # Get next state and reward.  The done variable
         # will be True if you reached the goal position,
         # False otherwise
