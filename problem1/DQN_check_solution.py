@@ -19,6 +19,12 @@ import gym
 import torch
 from tqdm import trange
 
+#---------- Added by us ------------
+from DQN_problem import *
+q_network.load_from_checkpoint(device)
+visualize = True
+#---------- End added by us ------------
+
 def running_average(x, N):
     ''' Function used to compute the running average
         of the last N elements of a vector x
@@ -30,13 +36,13 @@ def running_average(x, N):
         y = np.zeros_like(x)
     return y
 
-# Load model
-try:
-    model = torch.load('neural-network-1.pth')
-    print('Network model: {}'.format(model))
-except:
-    print('File neural-network-1.pth not found!')
-    exit(-1)
+# # Load model
+# try:
+#     model = torch.load('neural-network-1.pth')
+#     print('Network model: {}'.format(model))
+# except:
+#     print('File neural-network-1.pth not found!')
+#     exit(-1)
 
 # Import and initialize Mountain Car Environment
 env = gym.make('LunarLander-v2')
@@ -62,9 +68,17 @@ for i in EPISODES:
         # Get next state and reward.  The done variable
         # will be True if you reached the goal position,
         # False otherwise
-        q_values = model(torch.tensor([state]))
-        _, action = torch.max(q_values, axis=1)
+        # q_values = model(torch.tensor([state]))
+
+        # _, action = torch.max(q_values, axis=1)
+        with torch.no_grad():
+            q_values = agent.get_qvals(state, q_network)
+        
+        action = torch.argmax(q_values)
         next_state, reward, done, _ = env.step(action.item())
+
+        if visualize:
+            env.render()
 
         # Update episode reward
         total_episode_reward += reward

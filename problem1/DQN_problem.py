@@ -85,128 +85,130 @@ target_network = deepcopy(q_network)
 q_network.to(device)
 target_network.to(device)
 
-# Initialize optimizers
-optim_q = torch.optim.Adam(q_network.parameters(), lr=learning_rate)
 
-#----------------------------------------------------------------------------
-#----------------- Fill replay buffer with random experiences ---------------
-print('Filling replay buffer with random experiences')
+if __name__ == '__main__':
+    # Initialize optimizers
+    optim_q = torch.optim.Adam(q_network.parameters(), lr=learning_rate)
 
-while len(replay_buffer) < replay_buffer_size:
-    # Reset environment data and initialize variables
-    done = False
-    state = env.reset()
-    while not done:
-        # Take a random action
-        action = random_agent.forward(state)
-        next_state, reward, done, _ = env.step(int(action.item()))
-        replay_buffer.append((state, action, reward, next_state, done))
-        # Update state for next iteration
-        state = next_state
+    #----------------------------------------------------------------------------
+    #----------------- Fill replay buffer with random experiences ---------------
+    print('Filling replay buffer with random experiences')
 
-# trange is an alternative to range in python, from the tqdm library
-# It shows a nice progression bar that you can update with useful information
-EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
+    while len(replay_buffer) < replay_buffer_size:
+        # Reset environment data and initialize variables
+        done = False
+        state = env.reset()
+        while not done:
+            # Take a random action
+            action = random_agent.forward(state)
+            next_state, reward, done, _ = env.step(int(action.item()))
+            replay_buffer.append((state, action, reward, next_state, done))
+            # Update state for next iteration
+            state = next_state
 
-#----------------------------------------------------------------------------
-#-------------------------- Training episodes -------------------------------
-debug = False
-target_net_counter = 1
-for i in EPISODES:
-    # Reset environment data and initialize variables
-    done = False
-    state = env.reset()
-    total_episode_reward = 0.
-    t = 0
-    while not done:
-        # Take a random action
-        action = agent.forward(state, q_network)
+    # trange is an alternative to range in python, from the tqdm library
+    # It shows a nice progression bar that you can update with useful information
+    EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
 
-        if debug and t%8 == 0:
-            env.render()
-            breakpoint=True
-        # Get next state and reward.  The done variable
-        # will be True if you reached the goal position,
-        # False otherwise
-        next_state, reward, done, _ = env.step(int(action.item()))
-        replay_buffer.append((state, action, reward, next_state, done))
-        # Sample N experience from buffer and update q_net weights
+    #----------------------------------------------------------------------------
+    #-------------------------- Training episodes -------------------------------
+    debug = False
+    target_net_counter = 1
+    for i in EPISODES:
+        # Reset environment data and initialize variables
+        done = False
+        state = env.reset()
+        total_episode_reward = 0.
+        t = 0
+        while not done:
+            # Take a random action
+            action = agent.forward(state, q_network)
 
-        train_loss = 0
-        # FIXME: maybe implent batch update instead
-        optim_q.zero_grad()
-        for experience in sample(replay_buffer, batch_size_train):
-            state_train, action_train, reward_train, next_state_train, done_train = experience
+            if debug and t%8 == 0:
+                env.render()
+                breakpoint=True
+            # Get next state and reward.  The done variable
+            # will be True if you reached the goal position,
+            # False otherwise
+            next_state, reward, done, _ = env.step(int(action.item()))
+            replay_buffer.append((state, action, reward, next_state, done))
+            # Sample N experience from buffer and update q_net weights
 
-            if not done_train:
-                with torch.no_grad():
-                    target_qvals = agent.get_qvals(next_state_train, target_network)
-                target_val = reward_train + discount_factor * torch.max(target_qvals)
-            else: target_val = reward_train
+            train_loss = 0
+            # FIXME: maybe implent batch update instead
+            optim_q.zero_grad()
+            for experience in sample(replay_buffer, batch_size_train):
+                state_train, action_train, reward_train, next_state_train, done_train = experience
 
-            q_val = torch.max(agent.get_qvals(state_train, q_network, int(action_train.item())))
-            train_loss = train_loss + torch.pow(target_val - q_val, 2)
-        train_loss = train_loss * (1 / batch_size_train)
-        train_loss.backward()
-        clip_grad_norm_(q_network.parameters(), CLIP_VAL)
-        optim_q.step()
-        train_loss_list.append(train_loss.detach().cpu())
+                if not done_train:
+                    with torch.no_grad():
+                        target_qvals = agent.get_qvals(next_state_train, target_network)
+                    target_val = reward_train + discount_factor * torch.max(target_qvals)
+                else: target_val = reward_train
 
-        if target_net_counter==C_target:
-            target_net_counter = 1
-            q_net_state_dict = q_network.state_dict()
-            target_network.load_state_dict(q_net_state_dict)
+                q_val = torch.max(agent.get_qvals(state_train, q_network, int(action_train.item())))
+                train_loss = train_loss + torch.pow(target_val - q_val, 2)
+            train_loss = train_loss * (1 / batch_size_train)
+            train_loss.backward()
+            clip_grad_norm_(q_network.parameters(), CLIP_VAL)
+            optim_q.step()
+            train_loss_list.append(train_loss.detach().cpu())
 
-        # Update episode reward
-        total_episode_reward += reward
-        # Update state for next iteration
-        state = next_state
-        t += 1
-        target_net_counter += 1
+            if target_net_counter==C_target:
+                target_net_counter = 1
+                q_net_state_dict = q_network.state_dict()
+                target_network.load_state_dict(q_net_state_dict)
 
-    agent.decay_epsilon(i)
-    # Append episode reward and total number of steps
-    episode_reward_list.append(total_episode_reward)
-    episode_number_of_steps.append(t)
+            # Update episode reward
+            total_episode_reward += reward
+            # Update state for next iteration
+            state = next_state
+            t += 1
+            target_net_counter += 1
 
-    # Close environment
-    env.close()
+        agent.decay_epsilon(i)
+        # Append episode reward and total number of steps
+        episode_reward_list.append(total_episode_reward)
+        episode_number_of_steps.append(t)
 
-    # Updates the tqdm update bar with fresh information
-    # (episode number, total reward of the last episode, total number of Steps
-    # of the last episode, average reward, average number of steps)
-    EPISODES.set_description(
-        "Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
-            i, total_episode_reward, t,
-            running_average(episode_reward_list, n_ep_running_average)[-1],
-            running_average(episode_number_of_steps, n_ep_running_average)[-1]))
+        # Close environment
+        env.close()
 
-q_network.save_checkpoint()
+        # Updates the tqdm update bar with fresh information
+        # (episode number, total reward of the last episode, total number of Steps
+        # of the last episode, average reward, average number of steps)
+        EPISODES.set_description(
+            "Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
+                i, total_episode_reward, t,
+                running_average(episode_reward_list, n_ep_running_average)[-1],
+                running_average(episode_number_of_steps, n_ep_running_average)[-1]))
 
-# TODO: save plots for report
+    q_network.save_checkpoint()
 
-# Plot loss
-plt.plot(train_loss_list)
-plt.title('Train loss vs step')
-plt.show()
+    # TODO: save plots for report
 
-# Plot Rewards and steps
-fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
-ax[0].plot([i for i in range(1, N_episodes+1)], episode_reward_list, label='Episode reward')
-ax[0].plot([i for i in range(1, N_episodes+1)], running_average(
-    episode_reward_list, n_ep_running_average), label='Avg. episode reward')
-ax[0].set_xlabel('Episodes')
-ax[0].set_ylabel('Total reward')
-ax[0].set_title('Total Reward vs Episodes')
-ax[0].legend()
-ax[0].grid(alpha=0.3)
+    # Plot loss
+    plt.plot(train_loss_list)
+    plt.title('Train loss vs step')
+    plt.show()
 
-ax[1].plot([i for i in range(1, N_episodes+1)], episode_number_of_steps, label='Steps per episode')
-ax[1].plot([i for i in range(1, N_episodes+1)], running_average(
-    episode_number_of_steps, n_ep_running_average), label='Avg. number of steps per episode')
-ax[1].set_xlabel('Episodes')
-ax[1].set_ylabel('Total number of steps')
-ax[1].set_title('Total number of steps vs Episodes')
-ax[1].legend()
-ax[1].grid(alpha=0.3)
-plt.show()
+    # Plot Rewards and steps
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
+    ax[0].plot([i for i in range(1, N_episodes+1)], episode_reward_list, label='Episode reward')
+    ax[0].plot([i for i in range(1, N_episodes+1)], running_average(
+        episode_reward_list, n_ep_running_average), label='Avg. episode reward')
+    ax[0].set_xlabel('Episodes')
+    ax[0].set_ylabel('Total reward')
+    ax[0].set_title('Total Reward vs Episodes')
+    ax[0].legend()
+    ax[0].grid(alpha=0.3)
+
+    ax[1].plot([i for i in range(1, N_episodes+1)], episode_number_of_steps, label='Steps per episode')
+    ax[1].plot([i for i in range(1, N_episodes+1)], running_average(
+        episode_number_of_steps, n_ep_running_average), label='Avg. number of steps per episode')
+    ax[1].set_xlabel('Episodes')
+    ax[1].set_ylabel('Total number of steps')
+    ax[1].set_title('Total number of steps vs Episodes')
+    ax[1].legend()
+    ax[1].grid(alpha=0.3)
+    plt.show()
