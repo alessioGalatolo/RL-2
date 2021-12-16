@@ -191,7 +191,7 @@ if __name__ == '__main__':
             # Update episode reward
             total_episode_reward += reward
             
-            wandb.log({'loss':l, 'total_episode_reward':total_episode_reward, 'episode': i})
+            
             # Update state for next iteration
             state = next_state
             t += 1
@@ -202,7 +202,8 @@ if __name__ == '__main__':
         # Append episode reward and total number of steps
         episode_reward_list.append(total_episode_reward)
         episode_number_of_steps.append(t)
-
+        wandb.log({'loss':l, 'total_episode_reward':total_episode_reward, 'episode': i})
+        
         # Close environment
         env.close()
 
