@@ -195,8 +195,10 @@ if __name__ == '__main__':
     # TODO: save plots for report
 
     # Plot loss
+    train_loss_list = np.array(train_loss_list)
+    train_loss_list = np.ravel(train_loss_list)
+    print(np.size(train_loss_list))
     plt.plot(train_loss_list)
-    plt.title('Train loss vs step')
     plt.show(block=True)
     plt.savefig('loss.png')
 
