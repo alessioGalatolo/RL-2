@@ -26,6 +26,7 @@ from DQN_problem import *
 q_network.load_from_checkpoint(device)
 # visualize = True
 visualize = False
+save_gif = False
 
 def save_frames_as_gif(frames, path='./', filename='gym_animation.gif'):
 
@@ -96,7 +97,7 @@ for i in EPISODES:
         
         next_state, reward, done, _ = env.step(int(action.item()))
 
-        if visualize and t%2==0:
+        if visualize and t%1==0:
             frames.append(env.render(mode="rgb_array"))
             
 
@@ -127,5 +128,5 @@ if avg_reward - confidence >= CONFIDENCE_PASS:
 else:
     print("Your policy did not pass the test! The average reward of your policy needs to be greater than {} with 95% confidence".format(CONFIDENCE_PASS))
 
-if visualize:
+if save_gif and visualize:
     save_frames_as_gif(frames)

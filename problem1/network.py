@@ -21,10 +21,13 @@ class Model(nn.Module):
     def forward(self, x):
         return self.network(x)
     
-    def save_checkpoint(self, dir = '.', filename = 'neural-network-1'):
+    def save_checkpoint(self, dir = '.', filename = 'neural-network-1', date=None):
         try:
-            now = datetime.datetime.now()
-            now = now.strftime("%Y_%m_%d_%H_%M")  # descending order for sorting
+            if date is None:
+                now = datetime.datetime.now()
+                now = now.strftime("%Y_%m_%d_%H_%M")  # descending order for sorting
+            else:
+                now = date
             filename += '_' + now + '.pth'
             path = os.path.join(dir, filename)
             save_dict = self.state_dict()

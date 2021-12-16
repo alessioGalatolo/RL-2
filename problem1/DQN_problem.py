@@ -47,22 +47,23 @@ env.reset()
 
 # Parameters
 replay_buffer_size = 10000  # set in range of 5000-30000
-batch_size_train = 48  # set in range 4-128
-max_lr = 5e-4 # set in range 1e-3 to 1e-4
+batch_size_train = 64  # set in range 4-128
+max_lr = 1e-3 # set in range 1e-3 to 1e-4
 min_lr = 1e-4
 CLIP_VAL = 1.5 # a value between 0.5 and 2
 C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
-N_episodes = 350                            # set in range 100 to 1000
-discount_factor = 0.7                       # Value of the discount factor
+N_episodes = 500                            # set in range 100 to 1000
+discount_factor = 0.75                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
 n_actions = env.action_space.n               # Number of available actions
 dim_state = len(env.observation_space.high)  # State dimensionality
 eps_max = 0.99
 eps_min = 0.05
-decay_period=int(0.6*N_episodes)
-decay_method='exponential'
-LR_decay_period=int(0.9*N_episodes)
-
+decay_period = int(0.8 * N_episodes)
+decay_method = 'linear'
+LR_decay_period=int(0.9 * N_episodes)
+hidden_layers = [64, 64]
+checkpoint_interval = int(N_episodes / 20)
 
 config = dict(
     replay_buffer_size = replay_buffer_size,  # set in range of 5000-30000
@@ -80,7 +81,8 @@ config = dict(
     eps_min = eps_min,
     decay_period=decay_period,
     decay_method=decay_method,
-    LR_decay_period=LR_decay_period    
+    LR_decay_period=LR_decay_period,
+    hidden_layers = hidden_layers
 )
 
 # We will use these variables to compute the average episodic reward and
@@ -105,7 +107,7 @@ replay_buffer = deque(maxlen=replay_buffer_size)
 
 # Initialize networks
 q_network = Model(d_in = n_actions + dim_state,
-                               hidden_layers = [32, 32],
+                               hidden_layers = hidden_layers,
                                d_out = 1)
 target_network = deepcopy(q_network)
 q_network.to(device)
@@ -115,6 +117,7 @@ target_network.to(device)
 if __name__ == '__main__':
     # Initialize WandB
     wandb.init(project="Lab2", entity="el2805-rl", config=config)
+    run_name = wandb.run.name
 
     # Initialize optimizers
     optim_q = torch.optim.Adam(q_network.parameters(), lr=max_lr)
@@ -125,6 +128,9 @@ if __name__ == '__main__':
     #----------------------------------------------------------------------------
     #----------------- Fill replay buffer with random experiences ---------------
     print('Filling replay buffer with random experiences')
+
+    # Track best model
+    best_avg_reward = -np.inf
 
 # FIXME: Isn't it really wierd how big the buffer of random experiences is??
     while len(replay_buffer) < replay_buffer_size:
@@ -207,10 +213,24 @@ if __name__ == '__main__':
         # Append episode reward and total number of steps
         episode_reward_list.append(total_episode_reward)
         episode_number_of_steps.append(t)
-        wandb.log({'loss':l, 'total_episode_reward':total_episode_reward, 'episode': i})
+        
 
         # Close environment
         env.close()
+
+        # Save checkpoint
+        if i % checkpoint_interval == 0:
+            q_network.save_checkpoint(  dir = 'checkpoints', 
+                                        filename='ckpt_' + str(i) + '_' + run_name + '_', 
+                                        date='')
+
+        reward_running_avg = running_average(episode_reward_list, n_ep_running_average)[-1]
+
+        # Save best model
+        if reward_running_avg > best_avg_reward:
+            best_avg_reward = reward_running_avg
+            q_network.save_checkpoint(  filename='best_' + run_name + '_', 
+                                        date='')
 
         # Updates the tqdm update bar with fresh information
         # (episode number, total reward of the last episode, total number of Steps
@@ -219,10 +239,11 @@ if __name__ == '__main__':
             "LR = {:.1e} - Eps = {:.2f} - Episode {} - Reward/Steps: {:.1f}/{} - Avg. Reward/Steps: {:.1f}/{}".format(
                 scheduler.get_last_lr()[0], agent.epsilon,
                 i, total_episode_reward, t,
-                running_average(episode_reward_list, n_ep_running_average)[-1],
+                reward_running_avg,
                 running_average(episode_number_of_steps, n_ep_running_average)[-1]))
-
-    q_network.save_checkpoint()
+        
+        wandb.log({ 'loss':l, 'total_episode_reward':total_episode_reward, 
+                    'reward_running_avg':reward_running_avg, 'episode': i})
 
     # TODO: save plots for report
 
