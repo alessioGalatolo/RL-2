@@ -18,12 +18,27 @@ import numpy as np
 import gym
 import torch
 from tqdm import trange
+from matplotlib import animation
+import matplotlib.pyplot as plt
 
 #---------- Added by us ------------
 from DQN_problem import *
 q_network.load_from_checkpoint(device)
 # visualize = True
 visualize = False
+
+def save_frames_as_gif(frames, path='./', filename='gym_animation.gif'):
+
+    plt.figure()
+
+    patch = plt.imshow(frames[0])
+    plt.axis('off')
+
+    def animate(i):
+        patch.set_data(frames[i])
+
+    anim = animation.FuncAnimation(plt.gcf(), animate, frames = len(frames), interval=50)
+    anim.save(path + filename, writer='imagemagick', fps=24)
 #---------- End added by us ------------
 
 def running_average(x, N):
@@ -56,6 +71,9 @@ CONFIDENCE_PASS = 50
 # Reward
 episode_reward_list = []  # Used to store episodes reward
 
+# Anim frames
+frames = []
+
 # Simulate episodes
 print('Checking solution...')
 EPISODES = trange(N_EPISODES, desc='Episode: ', leave=True)
@@ -65,6 +83,7 @@ for i in EPISODES:
     done = False
     state = env.reset()
     total_episode_reward = 0.
+    t = 0
     while not done:
         # Get next state and reward.  The done variable
         # will be True if you reached the goal position,
@@ -77,14 +96,17 @@ for i in EPISODES:
         
         next_state, reward, done, _ = env.step(int(action.item()))
 
-        if visualize:
-            env.render()
+        if visualize and t%2==0:
+            frames.append(env.render(mode="rgb_array"))
+            
 
         # Update episode reward
         total_episode_reward += reward
 
         # Update state for next iteration
         state = next_state
+
+        t+=1
 
     # Append episode reward
     episode_reward_list.append(total_episode_reward)
@@ -104,3 +126,6 @@ if avg_reward - confidence >= CONFIDENCE_PASS:
     print('Your policy passed the test!')
 else:
     print("Your policy did not pass the test! The average reward of your policy needs to be greater than {} with 95% confidence".format(CONFIDENCE_PASS))
+
+if visualize:
+    save_frames_as_gif(frames)

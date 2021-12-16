@@ -11,7 +11,6 @@
 # Course: EL2805 - Reinforcement Learning - Lab 2 Problem 1
 # Code author: [Alessio Russo - alessior@kth.se]
 # Last update: 6th October 2020, by alessior@kth.se
-#
 
 # Load packages
 from collections import deque
@@ -47,20 +46,23 @@ env = gym.make('LunarLander-v2')
 env.reset()
 
 # Parameters
-replay_buffer_size = 5000  # set in range of 5000-30000
-batch_size_train = 32  # set in range 4-128
-max_lr = 1e-3 # set in range 1e-3 to 1e-4
+replay_buffer_size = 10000  # set in range of 5000-30000
+batch_size_train = 48  # set in range 4-128
+max_lr = 5e-4 # set in range 1e-3 to 1e-4
 min_lr = 1e-4
 CLIP_VAL = 1.5 # a value between 0.5 and 2
 C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
-N_episodes = 250                            # set in range 100 to 1000
-discount_factor = 0.75                       # Value of the discount factor
+N_episodes = 350                            # set in range 100 to 1000
+discount_factor = 0.7                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
 n_actions = env.action_space.n               # Number of available actions
 dim_state = len(env.observation_space.high)  # State dimensionality
 eps_max = 0.99
 eps_min = 0.05
-decay_period=int(0.7*N_episodes)
+decay_period=int(0.6*N_episodes)
+decay_method='exponential'
+LR_decay_period=int(0.9*N_episodes)
+
 
 config = dict(
     replay_buffer_size = replay_buffer_size,  # set in range of 5000-30000
@@ -76,9 +78,10 @@ config = dict(
     dim_state = dim_state,  # State dimensionality
     eps_max = eps_max,
     eps_min = eps_min,
-    decay_period=decay_period
+    decay_period=decay_period,
+    decay_method=decay_method,
+    LR_decay_period=LR_decay_period    
 )
-
 
 # We will use these variables to compute the average episodic reward and
 # the average number of steps per episode
@@ -94,7 +97,7 @@ else:
     device = torch.device('cpu')
 
 # Random agent initialization
-agent = CleverAgent(n_actions, dim_state, device, eps_max, eps_min, decay_period=decay_period, decay_method='linear')
+agent = CleverAgent(n_actions, dim_state, device, eps_max, eps_min, decay_period=decay_period, decay_method=decay_method)
 random_agent = RandomAgent(n_actions)
 
 # Training process
@@ -117,7 +120,7 @@ if __name__ == '__main__':
     optim_q = torch.optim.Adam(q_network.parameters(), lr=max_lr)
 
     # Initialize scheduler
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim_q, decay_period, eta_min = min_lr)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim_q, LR_decay_period, eta_min = min_lr)
 
     #----------------------------------------------------------------------------
     #----------------- Fill replay buffer with random experiences ---------------
