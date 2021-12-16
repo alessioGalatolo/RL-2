@@ -26,6 +26,9 @@ import tqdm
 from DQN_agent import RandomAgent, CleverAgent
 from network import Model
 from copy import deepcopy
+import wandb
+
+
 
 def running_average(x, N):
     ''' Function used to compute the running average
@@ -45,19 +48,38 @@ env.reset()
 
 # Parameters
 replay_buffer_size = 5000  # set in range of 5000-30000
-batch_size_train = 16  # set in range 4-128
+batch_size_train = 32  # set in range 4-128
 max_lr = 1e-3 # set in range 1e-3 to 1e-4
 min_lr = 1e-4
 CLIP_VAL = 1.5 # a value between 0.5 and 2
 C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
-N_episodes = 200                            # set in range 100 to 1000
-discount_factor = 0.8                       # Value of the discount factor
+N_episodes = 250                            # set in range 100 to 1000
+discount_factor = 0.75                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
 n_actions = env.action_space.n               # Number of available actions
 dim_state = len(env.observation_space.high)  # State dimensionality
 eps_max = 0.99
 eps_min = 0.05
-decay_period=int(0.9*N_episodes)
+decay_period=int(0.7*N_episodes)
+
+config = dict(
+    replay_buffer_size = replay_buffer_size,  # set in range of 5000-30000
+    batch_size_train = batch_size_train,  # set in range 4-128
+    max_lr = max_lr, # set in range 1e-3 to 1e-4
+    min_lr = min_lr,
+    CLIP_VAL = CLIP_VAL, # a value between 0.5 and 2
+    C_target = C_target, # Target update frequency
+    N_episodes = N_episodes,                            # set in range 100 to 1000
+    discount_factor = discount_factor,                      # Value of the discount factor
+    n_ep_running_average = n_ep_running_average,                    # Running average of 50 episodes
+    n_actions = n_actions,               # Number of available actions
+    dim_state = dim_state,  # State dimensionality
+    eps_max = eps_max,
+    eps_min = eps_min,
+    decay_period=decay_period
+)
+
+wandb.init(project="Lab2", entity="el2805-rl", config=config)
 
 # We will use these variables to compute the average episodic reward and
 # the average number of steps per episode
@@ -157,7 +179,9 @@ if __name__ == '__main__':
             train_loss.backward()
             clip_grad_norm_(q_network.parameters(), CLIP_VAL)
             optim_q.step()
-            train_loss_list.append(train_loss.detach().cpu().numpy())
+            l = train_loss.detach().cpu().numpy()
+            train_loss_list.append(l)
+            
 
             if target_net_counter==C_target:
                 target_net_counter = 1
@@ -166,6 +190,8 @@ if __name__ == '__main__':
 
             # Update episode reward
             total_episode_reward += reward
+            
+            wandb.log({'loss':l, 'total_episode_reward':total_episode_reward, 'episode': i})
             # Update state for next iteration
             state = next_state
             t += 1
