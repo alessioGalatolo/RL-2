@@ -221,7 +221,7 @@ if __name__ == '__main__':
         # Save checkpoint
         if i % checkpoint_interval == 0:
             q_network.save_checkpoint(  dir = 'checkpoints', 
-                                        filename='ckpt_' + str(i) + '_' + run_name + '_', 
+                                        filename='ckpt_' + str(i) + '_' + run_name, 
                                         date='')
 
         reward_running_avg = running_average(episode_reward_list, n_ep_running_average)[-1]
@@ -229,7 +229,7 @@ if __name__ == '__main__':
         # Save best model
         if reward_running_avg > best_avg_reward:
             best_avg_reward = reward_running_avg
-            q_network.save_checkpoint(  filename='best_' + run_name + '_', 
+            q_network.save_checkpoint(  filename='best_' + run_name, 
                                         date='')
 
         # Updates the tqdm update bar with fresh information

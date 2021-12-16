@@ -30,6 +30,9 @@ class Model(nn.Module):
                 now = date
             filename += '_' + now + '.pth'
             path = os.path.join(dir, filename)
+            save_path = path.rsplit('/', maxsplit=1)[0]
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
             save_dict = self.state_dict()
             with open(path, 'wb') as f:
                 torch.save(save_dict, f)
