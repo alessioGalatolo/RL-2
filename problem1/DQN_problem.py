@@ -79,7 +79,6 @@ config = dict(
     decay_period=decay_period
 )
 
-wandb.init(project="Lab2", entity="el2805-rl", config=config)
 
 # We will use these variables to compute the average episodic reward and
 # the average number of steps per episode
@@ -111,6 +110,9 @@ target_network.to(device)
 
 
 if __name__ == '__main__':
+    # Initialize WandB
+    wandb.init(project="Lab2", entity="el2805-rl", config=config)
+
     # Initialize optimizers
     optim_q = torch.optim.Adam(q_network.parameters(), lr=max_lr)
 
@@ -203,7 +205,7 @@ if __name__ == '__main__':
         episode_reward_list.append(total_episode_reward)
         episode_number_of_steps.append(t)
         wandb.log({'loss':l, 'total_episode_reward':total_episode_reward, 'episode': i})
-        
+
         # Close environment
         env.close()
 
