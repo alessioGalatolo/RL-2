@@ -23,10 +23,9 @@ import matplotlib.pyplot as plt
 from tqdm import trange
 import tqdm
 from DQN_agent import RandomAgent, CleverAgent
-from network import Model
+from network import Model, ConvNet
 from copy import deepcopy
 import wandb
-
 
 
 def running_average(x, N):
@@ -64,6 +63,7 @@ decay_method = 'linear'
 LR_decay_period=int(0.9 * N_episodes)
 hidden_layers = [64, 64]
 checkpoint_interval = int(N_episodes / 20)
+architecture = 'conv'             # 'fully-connected' or 'conv'
 
 config = dict(
     replay_buffer_size = replay_buffer_size,  # set in range of 5000-30000
@@ -82,7 +82,8 @@ config = dict(
     decay_period=decay_period,
     decay_method=decay_method,
     LR_decay_period=LR_decay_period,
-    hidden_layers = hidden_layers
+    hidden_layers = hidden_layers,
+    architecture = architecture
 )
 
 # We will use these variables to compute the average episodic reward and
@@ -106,9 +107,17 @@ random_agent = RandomAgent(n_actions)
 replay_buffer = deque(maxlen=replay_buffer_size)
 
 # Initialize networks
-q_network = Model(d_in = n_actions + dim_state,
+model_config = dict(d_in = n_actions + dim_state,
                                hidden_layers = hidden_layers,
                                d_out = 1)
+if architecture == 'fully-connected':
+    q_network = Model(**model_config)
+elif architecture == 'conv':
+    q_network = ConvNet(**model_config)
+else:
+    print('Invalid network architecture, choose from \'fully-connected\' or \'conv\'')
+    quit()
+
 target_network = deepcopy(q_network)
 q_network.to(device)
 target_network.to(device)
@@ -116,8 +125,9 @@ target_network.to(device)
 
 if __name__ == '__main__':
     # Initialize WandB
-    wandb.init(project="Lab2", entity="el2805-rl", config=config)
+    wandb.init(project="Lab2", entity="el2805-rl", config=config, mode="offline")
     run_name = wandb.run.name
+    run_name = ''
 
     # Initialize optimizers
     optim_q = torch.optim.Adam(q_network.parameters(), lr=max_lr)
@@ -244,6 +254,10 @@ if __name__ == '__main__':
         
         wandb.log({ 'loss':l, 'total_episode_reward':total_episode_reward, 
                     'reward_running_avg':reward_running_avg, 'episode': i})
+
+    q_network.save_checkpoint(  dir = 'checkpoints', 
+                                        filename='ckpt_' + str(i) + '_' + run_name, 
+                                        date='')
 
     # TODO: save plots for report
 
