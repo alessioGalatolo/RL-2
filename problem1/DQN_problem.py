@@ -20,8 +20,7 @@ import gym
 import torch
 from torch.nn.utils import clip_grad_norm_
 import matplotlib.pyplot as plt
-from tqdm import trange
-import tqdm
+from tqdm import trange, tqdm
 from DQN_agent import RandomAgent, CleverAgent
 from network import Model, ConvNet, SimpleConv
 from copy import deepcopy
@@ -86,6 +85,9 @@ hidden_layers = [64, 64] if architecture == 'fully-connected' else None
 
 if args.CKPT_PATH is not None:
     start_episode = int(input('Enter starting episode (cosmetic): '))
+    replay_buffer_size = batch_size_train
+    max_lr = 5e-4
+    LR_decay_period = int(0.9 * (N_episodes - start_episode))
 
 config = dict(
     replay_buffer_size = replay_buffer_size,  # set in range of 5000-30000
@@ -186,7 +188,8 @@ if __name__ == '__main__':
 
     # trange is an alternative to range in python, from the tqdm library
     # It shows a nice progression bar that you can update with useful information
-    EPISODES = trange(N_episodes, desc='Episode: ', leave=True, initial=start_episode)
+    # EPISODES = trange(N_episodes, desc='Episode: ', leave=True, initial=start_episode)
+    EPISODES = tqdm(range(start_episode, N_episodes, 1), desc='Episode: ', leave=True, initial=start_episode)
 
     #----------------------------------------------------------------------------
     #-------------------------- Training episodes -------------------------------
