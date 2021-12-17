@@ -23,9 +23,27 @@ import matplotlib.pyplot as plt
 from tqdm import trange
 import tqdm
 from DQN_agent import RandomAgent, CleverAgent
-from network import Model, ConvNet
+from network import Model, ConvNet, SimpleConv
 from copy import deepcopy
 import wandb
+import argparse
+
+
+parser = argparse.ArgumentParser(description='Train a DQN agent in the Lunar Lander Environment')
+parser.add_argument('--wandb',
+                        dest='WANDB',
+                        action='store_true',
+                        default=False)
+parser.add_argument('--load-ckpt',
+                        dest='CKPT_PATH',
+                        default=None,
+                        help='Name of the checkpoint file')
+parser.add_argument('--net',
+                        dest='NET',
+                        default='fully-connected',
+                        help='Network architecture: \'fully-connected\' or \'conv\' or \'simple-conv\'')
+args = parser.parse_args()
+
 
 
 def running_average(x, N):
@@ -40,7 +58,7 @@ def running_average(x, N):
     return y
 
 
-# Import and initialize the discrete Lunar Laner Environment
+# Import and initialize the discrete Lunar Lander Environment
 env = gym.make('LunarLander-v2')
 env.reset()
 
@@ -51,6 +69,7 @@ max_lr = 1e-3 # set in range 1e-3 to 1e-4
 min_lr = 1e-4
 CLIP_VAL = 1.5 # a value between 0.5 and 2
 C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
+start_episode = 0
 N_episodes = 500                            # set in range 100 to 1000
 discount_factor = 0.75                       # Value of the discount factor
 n_ep_running_average = 50                    # Running average of 50 episodes
@@ -61,9 +80,12 @@ eps_min = 0.05
 decay_period = int(0.8 * N_episodes)
 decay_method = 'linear'
 LR_decay_period=int(0.9 * N_episodes)
-hidden_layers = [64, 64]
 checkpoint_interval = int(N_episodes / 20)
-architecture = 'conv'             # 'fully-connected' or 'conv'
+architecture = args.NET             # 'fully-connected' or 'conv' or 'simple-conv'
+hidden_layers = [64, 64] if architecture == 'fully-connected' else None
+
+if args.CKPT_PATH is not None:
+    start_episode = int(input('Enter starting episode (cosmetic): '))
 
 config = dict(
     replay_buffer_size = replay_buffer_size,  # set in range of 5000-30000
@@ -72,6 +94,7 @@ config = dict(
     min_lr = min_lr,
     CLIP_VAL = CLIP_VAL, # a value between 0.5 and 2
     C_target = C_target, # Target update frequency
+    start_episode = start_episode,
     N_episodes = N_episodes,                            # set in range 100 to 1000
     discount_factor = discount_factor,                      # Value of the discount factor
     n_ep_running_average = n_ep_running_average,                    # Running average of 50 episodes
@@ -106,7 +129,7 @@ random_agent = RandomAgent(n_actions)
 # Training process
 replay_buffer = deque(maxlen=replay_buffer_size)
 
-# Initialize networks
+# Initialize Q network
 model_config = dict(d_in = n_actions + dim_state,
                                hidden_layers = hidden_layers,
                                d_out = 1)
@@ -114,19 +137,27 @@ if architecture == 'fully-connected':
     q_network = Model(**model_config)
 elif architecture == 'conv':
     q_network = ConvNet(**model_config)
+elif architecture == 'simple-conv':
+    q_network = SimpleConv(**model_config)
 else:
-    print('Invalid network architecture, choose from \'fully-connected\' or \'conv\'')
+    print('Invalid network architecture, choose from \'fully-connected\' or \'conv\' or \'simple-conv\'')
     quit()
-
-target_network = deepcopy(q_network)
-q_network.to(device)
-target_network.to(device)
 
 
 if __name__ == '__main__':
+    # Load pretrained weights
+    if args.CKPT_PATH is not None:
+        q_network.load_from_checkpoint(device, filename=args.CKPT_PATH)
+    
+    # Initialize target
+    target_network = deepcopy(q_network)
+    q_network.to(device)
+    target_network.to(device)
+
     # Initialize WandB
-    wandb.init(project="Lab2", entity="el2805-rl", config=config)
-    run_name = wandb.run.name
+    mode = 'online' if args.WANDB else 'offline'
+    wandb.init(project="Lab2", entity="el2805-rl", config=config, mode=mode )
+    run_name = wandb.run.name if args.WANDB else 'local'
 
     # Initialize optimizers
     optim_q = torch.optim.Adam(q_network.parameters(), lr=max_lr)
@@ -134,14 +165,13 @@ if __name__ == '__main__':
     # Initialize scheduler
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optim_q, LR_decay_period, eta_min = min_lr)
 
-    #----------------------------------------------------------------------------
-    #----------------- Fill replay buffer with random experiences ---------------
-    print('Filling replay buffer with random experiences')
-
     # Track best model
     best_avg_reward = -np.inf
 
-# FIXME: Isn't it really wierd how big the buffer of random experiences is??
+    #----------------------------------------------------------------------------
+    #----------------- Fill replay buffer with random experiences ---------------
+    print('Filling replay buffer with random experiences')   
+
     while len(replay_buffer) < replay_buffer_size:
         # Reset environment data and initialize variables
         done = False
@@ -156,7 +186,7 @@ if __name__ == '__main__':
 
     # trange is an alternative to range in python, from the tqdm library
     # It shows a nice progression bar that you can update with useful information
-    EPISODES = trange(N_episodes, desc='Episode: ', leave=True)
+    EPISODES = trange(N_episodes, desc='Episode: ', leave=True, initial=start_episode)
 
     #----------------------------------------------------------------------------
     #-------------------------- Training episodes -------------------------------
@@ -171,10 +201,7 @@ if __name__ == '__main__':
         while not done:
             # Take a random action
             action = agent.forward(state, q_network)
-
-            if debug and t%8 == 0:
-                env.render()
-                breakpoint=True
+            
             # Get next state and reward.  The done variable
             # will be True if you reached the goal position,
             # False otherwise
@@ -252,7 +279,7 @@ if __name__ == '__main__':
                 running_average(episode_number_of_steps, n_ep_running_average)[-1]))
         
         wandb.log({ 'loss':l, 'total_episode_reward':total_episode_reward, 
-                    'reward_running_avg':reward_running_avg, 'episode': i})
+                    'reward_running_avg':reward_running_avg, 'episode': i}, step=i)
 
     q_network.save_checkpoint(  dir = 'checkpoints', 
                                         filename='ckpt_' + str(i) + '_' + run_name, 

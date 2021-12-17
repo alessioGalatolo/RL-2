@@ -41,7 +41,7 @@ class BaseModel(nn.Module):
             print("Error: ", e)
             quit()
     
-    def load_from_checkpoint(self, device, dir = '.', filename = 'neural-network-1', date = '*'):
+    def load_from_checkpoint(self, device, dir = '', filename = 'neural-network-1', date = '*'):
         filename += '_' + date + '.pth'
         if date == '*':
             # look for checkpoints
@@ -98,7 +98,23 @@ class ConvNet(BaseModel):
     def forward(self, x):
         return self.network(x.unsqueeze(1))
 
-## Test code
+
+class SimpleConv(BaseModel):
+    def __init__(self, d_in, hidden_layers, d_out):
+        super().__init__()
+        layers = [ nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3, stride=3),
+                    nn.ReLU(),
+                    nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, stride=3),
+                    nn.Flatten(),
+                    nn.ReLU(),
+                    nn.Linear(32, 1)
+                    ]
+        self.network = nn.Sequential(*layers)
+        print('ConvNet with ' + str(self.get_n_params()) + ' total params loaded.')
+
+    def forward(self, x):
+        return self.network(x.unsqueeze(1))
+# # Test code
 # import torch.functional as F 
 # import torch.nn as nn
 # a = torch.randn(4,1,12)

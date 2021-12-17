@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 
 #---------- Added by us ------------
 from DQN_problem import *
-q_network.load_from_checkpoint(device)
+q_network.load_from_checkpoint(device, dir='checkpoints/vital-surf-13', filename='ckpt_475_vital-surf-13')
 # visualize = True
 visualize = False
 save_gif = False
