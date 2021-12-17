@@ -125,9 +125,8 @@ target_network.to(device)
 
 if __name__ == '__main__':
     # Initialize WandB
-    wandb.init(project="Lab2", entity="el2805-rl", config=config, mode="offline")
+    wandb.init(project="Lab2", entity="el2805-rl", config=config)
     run_name = wandb.run.name
-    run_name = ''
 
     # Initialize optimizers
     optim_q = torch.optim.Adam(q_network.parameters(), lr=max_lr)
