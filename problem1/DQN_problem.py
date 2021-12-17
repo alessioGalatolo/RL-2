@@ -64,29 +64,29 @@ env.reset()
 # Parameters
 replay_buffer_size = 10000  # set in range of 5000-30000
 n_random_experiences = replay_buffer_size
-batch_size_train = 64  # set in range 4-128
-max_lr = 1e-3 # set in range 1e-3 to 1e-4
+batch_size_train = 64   # set in range 4-128
+max_lr = 1e-3           # set in range 1e-3 to 1e-4
 min_lr = 1e-4
-CLIP_VAL = 1.5 # a value between 0.5 and 2
+CLIP_VAL = 1.5          # a value between 0.5 and 2
 C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
 start_episode = 0
-N_episodes = 500                            # set in range 100 to 1000
-discount_factor = 0.75                       # Value of the discount factor
-n_ep_running_average = 50                    # Running average of 50 episodes
-n_actions = env.action_space.n               # Number of available actions
-dim_state = len(env.observation_space.high)  # State dimensionality
+N_episodes = 500                                # set in range 100 to 1000
+discount_factor = 0.75                          # Value of the discount factor
+n_ep_running_average = 50                       # Running average of 50 episodes
+n_actions = env.action_space.n                  # Number of available actions
+dim_state = len(env.observation_space.high)     # State dimensionality
 eps_max = 0.99
 eps_min = 0.05
 decay_period = int(0.8 * N_episodes)
 decay_method = 'linear'
 LR_decay_period=int(0.9 * N_episodes)
 checkpoint_interval = int(N_episodes / 20)
-architecture = args.NET             # 'fully-connected' or 'conv' or 'simple-conv'
+architecture = args.NET                         # 'fully-connected' or 'conv' or 'simple-conv'
 hidden_layers = [64, 64] if architecture == 'fully-connected' else None
 
 if args.CKPT_PATH is not None:
     start_episode = int(input('Enter starting episode (affects the exploration param eps): '))
-    n_random_experiences = batch_size_train
+    n_random_experiences = 1
     max_lr = 5e-4
     LR_decay_period = int(0.9 * (N_episodes - start_episode))
 
@@ -145,7 +145,7 @@ elif architecture == 'simple-conv':
 else:
     print('Invalid network architecture, choose from \'fully-connected\' or \'conv\' or \'simple-conv\'')
     quit()
-
+q_network.to(device)
 
 if __name__ == '__main__':
     # Load pretrained weights
@@ -153,8 +153,7 @@ if __name__ == '__main__':
         q_network.load_from_checkpoint(device, filename=args.CKPT_PATH)
     
     # Initialize target
-    target_network = deepcopy(q_network)
-    q_network.to(device)
+    target_network = deepcopy(q_network)    
     target_network.to(device)
 
     # Initialize WandB
@@ -216,7 +215,7 @@ if __name__ == '__main__':
             train_loss = 0
             # FIXME: maybe implent batch update instead
             optim_q.zero_grad()
-            for experience in sample(replay_buffer, batch_size_train):
+            for experience in sample(replay_buffer, min(batch_size_train, n_random_experiences)):
                 state_train, action_train, reward_train, next_state_train, done_train = experience
 
                 with torch.no_grad():
@@ -301,8 +300,8 @@ if __name__ == '__main__':
 
     # Plot Rewards and steps
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
-    ax[0].plot([i for i in range(1, N_episodes+1)], episode_reward_list, label='Episode reward')
-    ax[0].plot([i for i in range(1, N_episodes+1)], running_average(
+    ax[0].plot([i for i in range(1 , (N_episodes - start_episode) + 1)], episode_reward_list, label='Episode reward')
+    ax[0].plot([i for i in range(1, (N_episodes - start_episode) + 1)], running_average(
         episode_reward_list, n_ep_running_average), label='Avg. episode reward')
     ax[0].set_xlabel('Episodes')
     ax[0].set_ylabel('Total reward')
@@ -310,8 +309,8 @@ if __name__ == '__main__':
     ax[0].legend()
     ax[0].grid(alpha=0.3)
 
-    ax[1].plot([i for i in range(1, N_episodes+1)], episode_number_of_steps, label='Steps per episode')
-    ax[1].plot([i for i in range(1, N_episodes+1)], running_average(
+    ax[1].plot([i for i in range(1, (N_episodes - start_episode)+1)], episode_number_of_steps, label='Steps per episode')
+    ax[1].plot([i for i in range(1, (N_episodes - start_episode)+1)], running_average(
         episode_number_of_steps, n_ep_running_average), label='Avg. number of steps per episode')
     ax[1].set_xlabel('Episodes')
     ax[1].set_ylabel('Total number of steps')

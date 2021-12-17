@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 
 #---------- Added by us ------------
 from DQN_problem import *
-q_network.load_from_checkpoint(device, dir='checkpoints/vital-surf-13', filename='ckpt_475_vital-surf-13')
+q_network.load_from_checkpoint(device, dir='checkpoints', filename='best_fear*')
 # visualize = True
 visualize = False
 save_gif = False
@@ -97,12 +97,13 @@ for i in EPISODES:
         
         next_state, reward, done, _ = env.step(int(action.item()))
 
-        if visualize and t%1==0:
-            frames.append(env.render(mode="rgb_array"))
-            
-
         # Update episode reward
         total_episode_reward += reward
+
+        if visualize:
+            frames.append(env.render(mode="rgb_array"))
+            if done:
+                print(f'{t} steps taken - end reward = {reward} - tot episode reward = {total_episode_reward}')
 
         # Update state for next iteration
         state = next_state
