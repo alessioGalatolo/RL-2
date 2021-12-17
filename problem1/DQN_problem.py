@@ -85,7 +85,7 @@ architecture = args.NET             # 'fully-connected' or 'conv' or 'simple-con
 hidden_layers = [64, 64] if architecture == 'fully-connected' else None
 
 if args.CKPT_PATH is not None:
-    start_episode = int(input('Enter starting episode (cosmetic): '))
+    start_episode = int(input('Enter starting episode (affects the exploration param eps): '))
     n_random_experiences = batch_size_train
     max_lr = 5e-4
     LR_decay_period = int(0.9 * (N_episodes - start_episode))
