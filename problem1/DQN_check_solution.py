@@ -23,9 +23,9 @@ import matplotlib.pyplot as plt
 
 #---------- Added by us ------------
 from DQN_problem import *
-q_network.load_from_checkpoint(device, dir='checkpoints', filename='best_fear*')
-# visualize = True
-visualize = False
+q_network.load_from_checkpoint(device, dir='checkpoints/genial-grass-35', filename='ckpt_799*')
+visualize = True
+# visualize = False
 save_gif = False
 
 def save_frames_as_gif(frames, path='./', filename='gym_animation.gif'):

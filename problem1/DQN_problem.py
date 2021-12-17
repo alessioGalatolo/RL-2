@@ -70,8 +70,8 @@ min_lr = 1e-4
 CLIP_VAL = 1.5          # a value between 0.5 and 2
 C_target = int(replay_buffer_size / batch_size_train) # Target update frequency
 start_episode = 0
-N_episodes = 500                                # set in range 100 to 1000
-discount_factor = 0.75                          # Value of the discount factor
+N_episodes = 800                                # set in range 100 to 1000
+discount_factor = 0.8                           # Value of the discount factor
 n_ep_running_average = 50                       # Running average of 50 episodes
 n_actions = env.action_space.n                  # Number of available actions
 dim_state = len(env.observation_space.high)     # State dimensionality
@@ -87,7 +87,8 @@ hidden_layers = [64, 64] if architecture == 'fully-connected' else None
 if args.CKPT_PATH is not None:
     start_episode = int(input('Enter starting episode (affects the exploration param eps): '))
     n_random_experiences = 1
-    max_lr = 5e-4
+    max_lr = 3e-4
+    eps_max = 0.1
     LR_decay_period = int(0.9 * (N_episodes - start_episode))
 
 config = dict(
@@ -189,7 +190,7 @@ if __name__ == '__main__':
     # trange is an alternative to range in python, from the tqdm library
     # It shows a nice progression bar that you can update with useful information
     # EPISODES = trange(N_episodes, desc='Episode: ', leave=True, initial=start_episode)
-    EPISODES = tqdm(range(start_episode, N_episodes, 1), desc='Episode: ', leave=True, initial=start_episode)
+    EPISODES = tqdm(range(start_episode, N_episodes, 1), desc='Episode: ', leave=True, initial=start_episode, total=N_episodes)
 
     #----------------------------------------------------------------------------
     #-------------------------- Training episodes -------------------------------
