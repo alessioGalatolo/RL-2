@@ -63,6 +63,7 @@ env.reset()
 
 # Parameters
 replay_buffer_size = 10000  # set in range of 5000-30000
+n_random_experiences = replay_buffer_size
 batch_size_train = 64  # set in range 4-128
 max_lr = 1e-3 # set in range 1e-3 to 1e-4
 min_lr = 1e-4
@@ -85,7 +86,7 @@ hidden_layers = [64, 64] if architecture == 'fully-connected' else None
 
 if args.CKPT_PATH is not None:
     start_episode = int(input('Enter starting episode (cosmetic): '))
-    replay_buffer_size = batch_size_train
+    n_random_experiences = batch_size_train
     max_lr = 5e-4
     LR_decay_period = int(0.9 * (N_episodes - start_episode))
 
@@ -174,7 +175,7 @@ if __name__ == '__main__':
     #----------------- Fill replay buffer with random experiences ---------------
     print('Filling replay buffer with random experiences')   
 
-    while len(replay_buffer) < replay_buffer_size:
+    while len(replay_buffer) < n_random_experiences:
         # Reset environment data and initialize variables
         done = False
         state = env.reset()
