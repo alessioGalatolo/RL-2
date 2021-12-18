@@ -14,7 +14,6 @@
 
 # Load packages
 from collections import deque
-from random import sample
 import numpy as np
 import gym
 import torch
@@ -23,6 +22,7 @@ from torch.nn.utils import clip_grad_norm_
 import matplotlib.pyplot as plt
 from tqdm import trange, tqdm
 from DQN_agent import RandomAgent, CleverAgent
+from replay_buffer import ReplayBuffer
 from network import Model, ConvNet, SimpleConv
 from copy import deepcopy
 import wandb
@@ -146,7 +146,7 @@ def main():
     random_agent = RandomAgent(n_actions)
 
     # Training process
-    replay_buffer = deque(maxlen=replay_buffer_size)
+    replay_buffer = ReplayBuffer(replay_buffer_size)
 
     # Initialize Q network
     model_config = dict(d_in=n_actions+dim_state,
@@ -200,7 +200,7 @@ def main():
             # Take a random action
             action = random_agent.forward(state)
             next_state, reward, done, _ = env.step(int(action.item()))
-            replay_buffer.append((state, action, reward, next_state, done))
+            replay_buffer.append(state, action, reward, next_state, done)
             # Update state for next iteration
             state = next_state
 
@@ -226,27 +226,27 @@ def main():
         t = 0
         while not done:
             # Take a random action
-            action = agent.forward(state, q_network)
+            action = agent.forward([state], q_network)
 
             # Get next state and reward.  The done variable
             # will be True if you reached the goal position,
             # False otherwise
             next_state, reward, done, _ = env.step(int(action.item()))
-            replay_buffer.append((state, action, reward, next_state, done))
+            replay_buffer.append(state, action, reward, next_state, done)
             # Sample N experience from buffer and update q_net weights
 
             train_loss = 0
             # FIXME: maybe implent batch update instead
             optim_q.zero_grad()
-            for experience in sample(replay_buffer, min(batch_size_train, n_random_experiences)):
-                state_train, action_train, reward_train, next_state_train, done_train = experience
+            experience = replay_buffer.sample(min(batch_size_train, n_random_experiences))
+            state_train, action_train, reward_train, next_state_train, done_train = experience
 
-                with torch.no_grad():
-                    target_qvals = agent.get_qvals(next_state_train, target_network)
-                target_val = reward_train + discount_factor * torch.max(target_qvals) * (1 - done_train)
+            with torch.no_grad():
+                target_qvals = agent.get_qvals(next_state_train, target_network)
+            target_val = reward_train + discount_factor * torch.max(target_qvals) * (1 - done_train)
 
-                q_val = agent.get_qvals(state_train, q_network, int(action_train.item()))
-                train_loss = train_loss + torch.pow(target_val - q_val, 2)
+            q_val = agent.get_qvals(state_train, q_network, int(action_train.item()))
+            train_loss = train_loss + torch.pow(target_val - q_val, 2)
 
             train_loss = train_loss * (1 / batch_size_train)
             train_loss.backward()

@@ -103,7 +103,7 @@ class CleverAgent(RandomAgent):
         else:
             raise NotImplementedError()
 
-        state = torch.Tensor(state).view(1,-1).expand(n_actions, self.dim_state).to(self.device)
+        state = torch.Tensor(state).expand(n_actions, self.dim_state).to(self.device)
         # Each column is a vector [onehot_action, s_1, ..., s_8]
         state_action_tensor = torch.cat((actions, state), dim=1)
         q_vals = network(state_action_tensor)
