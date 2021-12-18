@@ -18,6 +18,7 @@ import numpy as np
 import torch
 from random import random
 
+
 class Agent():
     ''' Base agent class, used as a parent class
 
@@ -56,13 +57,14 @@ class RandomAgent(Agent):
 
         self.last_action = torch.Tensor(np.random.randint(0, self.n_actions, size=(1,)))
         return self.last_action
-    
+
     def decay_epsilon(self, iteration):
         pass
 
 
 class CleverAgent(RandomAgent):
-    def __init__(self, n_actions: int, dim_state: int, device:torch.DeviceObjType, eps_max=0.99, eps_min=0.05,
+    def __init__(self, n_actions: int, dim_state: int,
+                 device: torch.DeviceObjType, eps_max=0.99, eps_min=0.05,
                  decay_period=1, decay_method='exponential'):
         super().__init__(n_actions)
         self.epsilon = eps_max
@@ -73,8 +75,9 @@ class CleverAgent(RandomAgent):
         self.n_actions = n_actions
         self.dim_state = dim_state
         self.device = device
-        
-        self.actions_tensor = torch.eye(n=n_actions, m=n_actions).to(self.device)
+
+        self.actions_tensor = torch.eye(n=n_actions,
+                                        m=n_actions).to(self.device)
 
     def decay_epsilon(self, iteration):
         new_epsilon = 0
@@ -89,8 +92,8 @@ class CleverAgent(RandomAgent):
         else:
             print(f'Decay method {self.decay_method} not recognized')
         self.epsilon = max(self.eps_min, new_epsilon)
-    
-    def get_qvals(self, state, network, actions = None):
+
+    def get_qvals(self, state, network, actions=None):
         if actions is None:
             actions = self.actions_tensor
             n_actions = self.n_actions
