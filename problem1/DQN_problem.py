@@ -284,9 +284,9 @@ def main():
                               filename=f'ckpt_{i}_{run_name}',
                               date='')
             if args.LEGACY:
-                q_network.save_checkpoint(save_specs)
+                q_network.save_checkpoint(**save_specs)
             else:
-                q_network.save(save_specs)
+                q_network.save(**save_specs)
 
         reward_running_avg = running_average(episode_reward_list, n_ep_running_average)[-1]
 
@@ -296,9 +296,9 @@ def main():
             save_specs = dict(filename=f'best_{run_name}',
                               date='')
             if args.LEGACY:
-                q_network.save_checkpoint(save_specs)
+                q_network.save_checkpoint(**save_specs)
             else:
-                q_network.save(save_specs)
+                q_network.save(**save_specs)
 
         # Updates the tqdm update bar with fresh information
         # (episode number, total reward of the last episode, total number of Steps
@@ -317,9 +317,9 @@ def main():
                       filename=f'ckpt_{i}_{run_name}',
                       date='')
     if args.LEGACY:
-        q_network.save_checkpoint(save_specs)
+        q_network.save_checkpoint(**save_specs)
     else:
-        q_network.save(save_specs)
+        q_network.save(**save_specs)
 
     # TODO: save plots for report
 
@@ -333,18 +333,22 @@ def main():
 
     # Plot Rewards and steps
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16, 9))
-    ax[0].plot([i for i in range(1 , (N_episodes - start_episode) + 1)], episode_reward_list, label='Episode reward')
-    ax[0].plot([i for i in range(1, (N_episodes - start_episode) + 1)], running_average(
-        episode_reward_list, n_ep_running_average), label='Avg. episode reward')
+    ax[0].plot([i for i in range(1, (N_episodes - start_episode) + 1)],
+               episode_reward_list, label='Episode reward')
+    ax[0].plot([i for i in range(1, (N_episodes - start_episode) + 1)],
+               running_average(episode_reward_list, n_ep_running_average),
+               label='Avg. episode reward')
     ax[0].set_xlabel('Episodes')
     ax[0].set_ylabel('Total reward')
     ax[0].set_title('Total Reward vs Episodes')
     ax[0].legend()
     ax[0].grid(alpha=0.3)
 
-    ax[1].plot([i for i in range(1, (N_episodes - start_episode)+1)], episode_number_of_steps, label='Steps per episode')
-    ax[1].plot([i for i in range(1, (N_episodes - start_episode)+1)], running_average(
-        episode_number_of_steps, n_ep_running_average), label='Avg. number of steps per episode')
+    ax[1].plot([i for i in range(1, (N_episodes - start_episode)+1)],
+               episode_number_of_steps, label='Steps per episode')
+    ax[1].plot([i for i in range(1, (N_episodes - start_episode)+1)],
+               running_average(episode_number_of_steps, n_ep_running_average),
+               label='Avg. number of steps per episode')
     ax[1].set_xlabel('Episodes')
     ax[1].set_ylabel('Total number of steps')
     ax[1].set_title('Total number of steps vs Episodes')

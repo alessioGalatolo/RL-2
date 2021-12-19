@@ -38,7 +38,7 @@ class BaseModel(nn.Module):
             with open(path, 'wb') as f:
                 torch.save(self, f)
         except Exception as e:
-            print("Error: ", e)
+            print("Error when saving the whole network: ", e)
             quit()
 
     def save_checkpoint(self, dir=None, filename='neural-network-1', date=None):
@@ -59,7 +59,7 @@ class BaseModel(nn.Module):
             with open(path, 'wb') as f:
                 torch.save(save_dict, f)
         except Exception as e:
-            print("Error: ", e)
+            print("Error when saving the network dict: ", e)
             quit()
 
     def load_from_checkpoint(self, device, dir='', filename='neural-network-1', date = '*'):
