@@ -19,6 +19,8 @@ import gym
 import torch
 from tqdm import trange
 
+from DQN_agent import CleverAgent
+
 def running_average(x, N):
     ''' Function used to compute the running average
         of the last N elements of a vector x
@@ -32,7 +34,7 @@ def running_average(x, N):
 
 # Load model
 try:
-    model = torch.load('checkpoints/ckpt_160_denim-puddle-58_.pth')
+    model = torch.load('best_kind-sponge-70_.pth').cpu()
     print('Network model: {}'.format(model))
 except:
     print('File neural-network-1.pth not found!')
@@ -49,6 +51,11 @@ CONFIDENCE_PASS = 50
 # Reward
 episode_reward_list = []  # Used to store episodes reward
 
+n_actions = env.action_space.n
+dim_state = len(env.observation_space.high)
+
+agent = CleverAgent(n_actions, dim_state, torch.device('cpu'))
+
 # Simulate episodes
 print('Checking solution...')
 EPISODES = trange(N_EPISODES, desc='Episode: ', leave=True)
@@ -62,7 +69,7 @@ for i in EPISODES:
         # Get next state and reward.  The done variable
         # will be True if you reached the goal position,
         # False otherwise
-        q_values = model(torch.tensor([state]))
+        q_values = agent.get_qvals([state], model)
         _, action = torch.max(q_values, axis=1)
         next_state, reward, done, _ = env.step(action.item())
 
