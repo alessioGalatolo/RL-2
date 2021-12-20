@@ -240,16 +240,16 @@ def main():
             optim_q.zero_grad()
             experience = replay_buffer.sample(min(batch_size_train, n_random_experiences))
             state_train, action_train, reward_train, next_state_train, done_train = experience
+            done_train = torch.Tensor(list(map(lambda x: float(x), done_train))).to(device)
+            reward_train = torch.Tensor(reward_train).to(device)
 
             with torch.no_grad():
                 target_qvals = agent.get_qvals(next_state_train, target_network)
-                done_train = torch.Tensor(list(map(lambda x: float(x), done_train))).to(device)
-                reward_train = torch.Tensor(reward_train).to(device)
-                
-            target_val = reward_train + discount_factor * torch.max(target_qvals) * (1 - done_train)
+
+            target_val = reward_train + discount_factor * torch.max(target_qvals, dim=1).values * (1 - done_train)
 
             q_val = agent.get_qvals(state_train, q_network, list(map(lambda x: int(x.item()), action_train)))
-            train_loss = torch.sum(torch.pow(target_val - q_val, 2))
+            train_loss = torch.sum(torch.pow(target_val - q_val.view(-1), 2))
 
             train_loss = train_loss * (1 / batch_size_train)
             train_loss.backward()
