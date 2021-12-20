@@ -88,7 +88,7 @@ def main():
     N_episodes = 800  # set in range 100 to 1000
     discount_factor = 0.75  # Value of the discount factor
     n_ep_running_average = 50  # Running average of 50 episodes
-    eps_max = 0.1
+    eps_max = 0.99
     eps_min = 0.05
     decay_period = int(0.8 * N_episodes)
     decay_method = 'linear'
@@ -239,16 +239,17 @@ def main():
             optim_q.zero_grad()
             experience = replay_buffer.sample(min(batch_size_train, n_random_experiences))
             state_train, action_train, reward_train, next_state_train, done_train = experience
-            action_train = np.array(action_train, dtype=np.int32)
+            action_train = np.array(list(map(lambda x: x.cpu().item(), action_train)),
+                                    dtype=np.int32)
             done_train = torch.Tensor(list(map(lambda x: float(x), done_train))).to(device)
             reward_train = torch.Tensor(reward_train).to(device)
-            state_train = torch.Tensor(state_train).to(device) 
+            state_train = torch.Tensor(np.array(state_train)).to(device)
             next_state_train = torch.Tensor(next_state_train).to(device)
 
             with torch.no_grad():
                 target_qvals = agent.get_qvals(next_state_train, target_network)
-            
-            target_val = reward_train + discount_factor * torch.max(target_qvals, dim=1).values * (1 - done_train)
+                target_val = reward_train + discount_factor * torch.max(target_qvals, dim=1).values * (1 - done_train)
+
             q_val = agent.get_qvals(state_train, q_network)[dummy_arr, action_train]
 
             train_loss = loss_func(q_val, target_val)

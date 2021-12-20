@@ -99,7 +99,7 @@ class CleverAgent(RandomAgent):
 
     def forward(self, state, q_network, deterministic=False):
         if random() > self.epsilon * (1 - deterministic):
-            state = torch.Tensor(list(state)).unsqueeze(0)
+            state = torch.Tensor(list(state)).unsqueeze(0).to(self.device)
             q_vals = self.get_qvals(state, q_network)
             clever_action = torch.argmax(q_vals)
             return clever_action
