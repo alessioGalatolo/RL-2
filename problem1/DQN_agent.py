@@ -11,7 +11,7 @@
 # Course: EL2805 - Reinforcement Learning - Lab 2 Problem 1
 # Code author: [Alessio Russo - alessior@kth.se]
 # Last update: 20th October 2020, by alessior@kth.se
-#
+
 
 # Load packages
 import numpy as np
@@ -93,28 +93,13 @@ class CleverAgent(RandomAgent):
             print(f'Decay method {self.decay_method} not recognized')
         self.epsilon = max(self.eps_min, new_epsilon)
 
-    def get_qvals(self, state, network, actions=None):
-        if actions is None:
-            actions = self.actions_tensor
-            n_actions = self.n_actions
-        elif isinstance(actions, int) and actions >= 0 and actions < self.n_actions:
-            actions = self.actions_tensor[actions].unsqueeze(0).to(self.device)
-            n_actions = 1
-        elif isinstance(actions, list):
-            actions = list(map(lambda action: self.actions_tensor[action].to(self.device), actions))
-            actions = torch.stack(actions).to(self.device)
-            n_actions = 1
-        else:
-            raise NotImplementedError()
-
-        state = torch.Tensor(np.array(state)).view(-1, 1, self.dim_state).expand(len(state), n_actions, self.dim_state).to(self.device)
-        # Each column is a vector [onehot_action, s_1, ..., s_8]
-        state_action_tensor = torch.cat((actions.view(-1, n_actions, self.n_actions).expand(len(state), -1, -1), state), dim=2)
-        q_vals = network(state_action_tensor)
-        return q_vals.view(len(state), -1)
+    def get_qvals(self, states, network):        
+        q_vals = network(states)
+        return q_vals
 
     def forward(self, state, q_network, deterministic=False):
         if random() > self.epsilon * (1 - deterministic):
+            state = torch.Tensor(list(state)).unsqueeze(0)
             q_vals = self.get_qvals(state, q_network)
             clever_action = torch.argmax(q_vals)
             return clever_action

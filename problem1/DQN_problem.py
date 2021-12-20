@@ -97,6 +97,7 @@ def main():
     checkpoint_interval = int(N_episodes / 20)
     architecture = args.NET  # 'fully-connected' or 'conv' or 'simple-conv'
     hidden_layers = [64, 64] if architecture == 'fully-connected' else None
+    loss_func = torch.nn.MSELoss()
 
     if args.CKPT_PATH is not None:
         start_episode = int(input('Enter starting episode (affects the exploration param eps): '))
@@ -149,9 +150,9 @@ def main():
     replay_buffer = ReplayBuffer(replay_buffer_size)
 
     # Initialize Q network
-    model_config = dict(d_in=n_actions+dim_state,
+    model_config = dict(d_in=dim_state,
                         hidden_layers=hidden_layers,
-                        d_out=1)
+                        d_out=n_actions)
     if architecture == 'fully-connected':
         q_network = Model(**model_config)
     elif architecture == 'conv':
@@ -224,9 +225,10 @@ def main():
         state = env.reset()
         total_episode_reward = 0.
         t = 0
+        dummy_arr = np.arange(batch_size_train)
         while not done:
             # Take a random action
-            action = agent.forward([state], q_network)
+            action = agent.forward(state, q_network)
 
             # Get next state and reward.  The done variable
             # will be True if you reached the goal position,
@@ -240,18 +242,18 @@ def main():
             optim_q.zero_grad()
             experience = replay_buffer.sample(min(batch_size_train, n_random_experiences))
             state_train, action_train, reward_train, next_state_train, done_train = experience
+            action_train = np.array(action_train, dtype=np.int32)
             done_train = torch.Tensor(list(map(lambda x: float(x), done_train))).to(device)
             reward_train = torch.Tensor(reward_train).to(device)
+            state_train = torch.Tensor(state_train).to(device) 
+            next_state_train = torch.Tensor(next_state_train).to(device)
 
             with torch.no_grad():
                 target_qvals = agent.get_qvals(next_state_train, target_network)
-
             target_val = reward_train + discount_factor * torch.max(target_qvals, dim=1).values * (1 - done_train)
+            q_val = agent.get_qvals(state_train, q_network)[dummy_arr, action_train]
 
-            q_val = agent.get_qvals(state_train, q_network, list(map(lambda x: int(x.item()), action_train)))
-            train_loss = torch.sum(torch.pow(target_val - q_val.view(-1), 2))
-
-            train_loss = train_loss * (1 / batch_size_train)
+            train_loss = loss_func(q_val, target_val)
             train_loss.backward()
             clip_grad_norm_(q_network.parameters(), CLIP_VAL)
             optim_q.step()
