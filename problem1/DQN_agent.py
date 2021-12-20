@@ -93,15 +93,16 @@ class CleverAgent(RandomAgent):
             print(f'Decay method {self.decay_method} not recognized')
         self.epsilon = max(self.eps_min, new_epsilon)
 
-    def get_qvals(self, states, network):        
+    def get_qvals(self, states, network):
         q_vals = network(states)
         return q_vals
 
     def forward(self, state, q_network, deterministic=False):
         if random() > self.epsilon * (1 - deterministic):
-            state = torch.Tensor(list(state)).unsqueeze(0).to(self.device)
-            q_vals = self.get_qvals(state, q_network)
-            clever_action = torch.argmax(q_vals)
+            with torch.no_grad():
+                state = torch.Tensor(list(state)).unsqueeze(0).to(self.device)
+                q_vals = self.get_qvals(state, q_network)
+                clever_action = torch.argmax(q_vals)
             return clever_action
         random_action = super().forward(state)
         return random_action
