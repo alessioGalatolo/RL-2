@@ -13,7 +13,6 @@
 # Last update: 6th October 2020, by alessior@kth.se
 
 # Load packages
-from collections import deque
 import numpy as np
 import gym
 import torch
@@ -237,8 +236,6 @@ def main():
             replay_buffer.append(state, action, reward, next_state, done)
             # Sample N experience from buffer and update q_net weights
 
-            train_loss = 0
-            # FIXME: maybe implent batch update instead
             optim_q.zero_grad()
             experience = replay_buffer.sample(min(batch_size_train, n_random_experiences))
             state_train, action_train, reward_train, next_state_train, done_train = experience
@@ -250,6 +247,7 @@ def main():
 
             with torch.no_grad():
                 target_qvals = agent.get_qvals(next_state_train, target_network)
+            
             target_val = reward_train + discount_factor * torch.max(target_qvals, dim=1).values * (1 - done_train)
             q_val = agent.get_qvals(state_train, q_network)[dummy_arr, action_train]
 
