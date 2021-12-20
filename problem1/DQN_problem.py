@@ -315,7 +315,7 @@ def main():
     q_network.save(**save_specs)
 
     # TODO: save plots for report
-    wandb.log({'max_avg_reward': max(reward_running_avg_list), 'best_avg_episode': best_avg_episode}, step=best_avg_episode)
+    wandb.log({'max_avg_reward': best_avg_reward, 'best_avg_episode': best_avg_episode})
 
     # Plot loss
     train_loss_list = np.array(train_loss_list)
