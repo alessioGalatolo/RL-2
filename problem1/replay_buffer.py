@@ -1,7 +1,7 @@
 from collections import deque
 from random import sample
 import torch
-
+import numpy as np
 
 class ReplayBuffer():
     def __init__(self, size):
@@ -10,6 +10,7 @@ class ReplayBuffer():
         self.rewards = deque(maxlen=size)
         self.next_states = deque(maxlen=size)
         self.dones = deque(maxlen=size)
+        self.indices = [i for i in range(size)]
 
     def __len__(self):
         return len(self.states)
@@ -21,12 +22,13 @@ class ReplayBuffer():
         self.next_states.append(next_state)
         self.dones.append(done)
 
-    def sample(self, size):
-        states = sample(self.states, size)
-        actions = sample(self.actions, size)
-        rewards = sample(self.rewards, size)
-        next_states = sample(self.next_states, size)
-        dones = sample(self.dones, size)
+    def sample(self, batch_size):
+        inds = sample(self.indices, batch_size)
+        states = [self.states[i] for i in inds]
+        actions = [self.actions[i] for i in inds]
+        rewards = [self.rewards [i] for i in inds]
+        next_states = [self.next_states[i] for i in inds]
+        dones = [self.dones[i] for i in inds]
 
         # states = torch.Tensor(states)
         # actions = torch.Tensor(actions)
