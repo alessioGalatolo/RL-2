@@ -71,7 +71,7 @@ class CleverAgent(RandomAgent):
         self.eps_min = eps_min
         self.lr = lr
         self.decay_method = decay_method
-        self.target_update_freq = 10
+        self.target_update_freq = 1
         self.discount_factor = 0.95
         self.decay_period = decay_period
         self.loss_func = MSELoss()

@@ -40,15 +40,15 @@ env = gym.make('LunarLander-v2')
 env.reset()
 
 # Parameters
-N_episodes = 100                             # Number of episodes
-discount_factor = 0.95                       # Value of the discount factor
+N_episodes = 200                             # Number of episodes
+discount_factor = 0.85                       # Value of the discount factor
 batch_size_train = 64
 n_ep_running_average = 50                    # Running average of 50 episodes
 n_actions = env.action_space.n               # Number of available actions
 dim_state = len(env.observation_space.high)  # State dimensionality
 L = 5000                                     # Buffer length
-n_hidden = [16, 16]                          # Hidden nodes
-lr = 1e-4
+n_hidden = [128, 16]                          # Hidden nodes
+lr = 3e-4
 decay_period = int(0.9 * N_episodes)
 
 # We will use these variables to compute the average episodic reward and
