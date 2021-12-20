@@ -1,32 +1,41 @@
-from collections import deque
-from random import sample
+import numpy as np
 import torch
 
 
 class ReplayBuffer():
-    def __init__(self, size):
-        self.states = deque(maxlen=size)
-        self.actions = deque(maxlen=size)
-        self.rewards = deque(maxlen=size)
-        self.next_states = deque(maxlen=size)
-        self.dones = deque(maxlen=size)
+    def __init__(self, size, dim_state):
+        self.current_index = 0
+        self.full = False
+        self.size = size
+        self.states = np.empty((size, dim_state), dtype=np.float16)
+        self.actions = np.empty(size, dtype=object)
+        self.rewards = np.empty(size, dtype=np.float16)
+        self.next_states = np.empty((size, dim_state), dtype=np.float16)
+        self.dones = np.empty(size, dtype=object)
+        self.random_generator = np.random.default_rng()
 
     def __len__(self):
-        return len(self.states)
+        return self.size if self.full else self.current_index
 
     def append(self, state, action, reward, next_state, done):
-        self.states.append(state)
-        self.actions.append(action)
-        self.rewards.append(reward)
-        self.next_states.append(next_state)
-        self.dones.append(done)
+        self.states[self.current_index] = state
+        self.actions[self.current_index] = action
+        self.rewards[self.current_index] = reward
+        self.next_states[self.current_index] = next_state
+        self.dones[self.current_index] = done
+
+        self.current_index += 1
+        if self.current_index == self.size:
+            self.full = True
+            self.current_index = 0
 
     def sample(self, size):
-        states = sample(self.states, size)
-        actions = sample(self.actions, size)
-        rewards = sample(self.rewards, size)
-        next_states = sample(self.next_states, size)
-        dones = sample(self.dones, size)
+        choices = self.random_generator.choice(self.size, size, replace=False)
+        states = self.states[choices]
+        actions = self.actions[choices]
+        rewards = self.rewards[choices]
+        next_states = self.next_states[choices]
+        dones = self.dones[choices]
 
         # states = torch.Tensor(states)
         # actions = torch.Tensor(actions)
