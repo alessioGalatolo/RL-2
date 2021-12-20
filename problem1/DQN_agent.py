@@ -11,15 +11,16 @@
 # Course: EL2805 - Reinforcement Learning - Lab 2 Problem 1
 # Code author: [Alessio Russo - alessior@kth.se]
 # Last update: 20th October 2020, by alessior@kth.se
-
+#
 
 # Load packages
-import numpy as np
-import torch
 from random import random
+import numpy as np
+from torch.nn.modules.loss import MSELoss
+from network import Model
+import torch
 
-
-class Agent():
+class Agent(object):
     ''' Base agent class, used as a parent class
 
         Args:
@@ -45,39 +46,35 @@ class Agent():
 class RandomAgent(Agent):
     ''' Agent taking actions uniformly at random, child of the class Agent'''
     def __init__(self, n_actions: int):
-        super().__init__(n_actions)
+        super(RandomAgent, self).__init__(n_actions)
 
     def forward(self, state: np.ndarray) -> int:
-
-        # Compute an action uniformly at random across n_actions possible
+        # ''' Compute an action uniformly at random across n_actions possible
         #     choices
 
-        # Returns:
-        #     action (int): the random action
-
-        self.last_action = torch.Tensor(np.random.randint(0, self.n_actions, size=(1,)))
+        #     Returns:
+        #         action (int): the random action
+        # '''
+        self.last_action = np.random.randint(0, self.n_actions)
         return self.last_action
 
-    def decay_epsilon(self, iteration):
-        pass
-
-
 class CleverAgent(RandomAgent):
-    def __init__(self, n_actions: int, dim_state: int,
-                 device: torch.DeviceObjType, eps_max=0.99, eps_min=0.05,
-                 decay_period=1, decay_method='exponential'):
+    def __init__(self, dim_state:int, n_hidden:list, n_actions: int, device:torch.DeviceObjType, 
+                    lr, decay_period, eps_max=0.99, eps_min=0.05, decay_method='exponential'):
         super().__init__(n_actions)
+        self.Q_net = Model(dim_state, n_hidden, n_actions).to(device)
+        self.T_net = Model(dim_state, n_hidden, n_actions).to(device)
+        self.optim_q = torch.optim.Adam(self.Q_net.parameters(), lr=lr)
+        self.device = device
         self.epsilon = eps_max
         self.eps_max = eps_max
         self.eps_min = eps_min
-        self.decay_period = decay_period
+        self.lr = lr
         self.decay_method = decay_method
-        self.n_actions = n_actions
-        self.dim_state = dim_state
-        self.device = device
-
-        self.actions_tensor = torch.eye(n=n_actions,
-                                        m=n_actions).to(self.device)
+        self.target_update_freq = 10
+        self.discount_factor = 0.95
+        self.decay_period = decay_period
+        self.loss_func = MSELoss()
 
     def decay_epsilon(self, iteration):
         new_epsilon = 0
@@ -93,16 +90,37 @@ class CleverAgent(RandomAgent):
             print(f'Decay method {self.decay_method} not recognized')
         self.epsilon = max(self.eps_min, new_epsilon)
 
-    def get_qvals(self, states, network):
-        q_vals = network(states)
-        return q_vals
-
-    def forward(self, state, q_network, deterministic=False):
+    
+    def forward(self, state, deterministic = False):
         if random() > self.epsilon * (1 - deterministic):
-            with torch.no_grad():
-                state = torch.Tensor(list(state)).unsqueeze(0).to(self.device)
-                q_vals = self.get_qvals(state, q_network)
-                clever_action = torch.argmax(q_vals)
-            return clever_action
+            state = torch.Tensor(state).unsqueeze(0).to(self.device)
+            q_vals = self.Q_net(state)
+            clever_action = torch.argmax(q_vals, axis=1)
+            return clever_action.item()
         random_action = super().forward(state)
         return random_action
+
+    def train_step(self, rand_exp_batch, episode):
+        states, actions, rewards, next_states, dones = rand_exp_batch
+        states = torch.tensor(states, dtype=torch.float32).to(self.device)
+        actions = torch.tensor(actions, dtype=torch.long)
+        next_states = torch.tensor(next_states,dtype=torch.float32).to(self.device)
+        rewards = torch.tensor(rewards, dtype=torch.float32).to(self.device)
+        dones = torch.tensor(dones).to(self.device)
+        batch_inds = torch.arange(len(actions), dtype=torch.long)
+
+        self.optim_q.zero_grad()
+        with torch.no_grad():
+            t_vals = self.T_net(next_states)
+            max_t_vals, _ = torch.max(t_vals, axis=1)
+            targets = rewards + self.discount_factor * max_t_vals * torch.logical_not(dones)
+        
+        q_vals = self.Q_net(states)[batch_inds, actions]
+
+        loss = self.loss_func(q_vals, targets)
+        loss.backward()
+        self.optim_q.step()
+
+        if episode % self.target_update_freq == 0:
+            self.T_net.load_state_dict(self.Q_net.state_dict())
+        return loss.detach().cpu()

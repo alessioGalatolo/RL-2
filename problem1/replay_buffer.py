@@ -21,12 +21,12 @@ class ReplayBuffer():
         self.next_states.append(next_state)
         self.dones.append(done)
 
-    def sample(self, size):
-        states = sample(self.states, size)
-        actions = sample(self.actions, size)
-        rewards = sample(self.rewards, size)
-        next_states = sample(self.next_states, size)
-        dones = sample(self.dones, size)
+    def sample(self, batch_size):
+        states = sample(self.states, batch_size)
+        actions = sample(self.actions, batch_size)
+        rewards = sample(self.rewards, batch_size)
+        next_states = sample(self.next_states, batch_size)
+        dones = sample(self.dones, batch_size)
 
         # states = torch.Tensor(states)
         # actions = torch.Tensor(actions)
