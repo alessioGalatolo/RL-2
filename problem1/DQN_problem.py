@@ -80,13 +80,13 @@ def main():
     replay_buffer_size = 10000  # set in range of 5000-30000
     n_random_experiences = replay_buffer_size
     batch_size_train = 64  # set in range 4-128
-    max_lr = 1e-4  # set in range 1e-3 to 1e-4
+    max_lr = 1e-3  # set in range 1e-3 to 1e-4
     min_lr = 1e-4
     CLIP_VAL = 1.5  # a value between 0.5 and 2
     C_target = int(replay_buffer_size / batch_size_train)  # Target update frequency
     start_episode = 0
     N_episodes = 800  # set in range 100 to 1000
-    discount_factor = 0.75  # Value of the discount factor
+    discount_factor = 0.8  # Value of the discount factor
     n_ep_running_average = 50  # Running average of 50 episodes
     eps_max = 0.99
     eps_min = 0.05
