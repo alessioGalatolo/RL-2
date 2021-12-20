@@ -128,7 +128,7 @@ def main():
     random_agent = RandomAgent(n_actions)
 
     # Training process
-    replay_buffer = ReplayBuffer(config['replay_buffer_size'])
+    replay_buffer = ReplayBuffer(config['replay_buffer_size'], dim_state)
 
     # Initialize Q network
     architecture = config['architecture']
@@ -230,8 +230,8 @@ def main():
                                     dtype=np.int32)
             done_train = torch.Tensor(list(map(lambda x: float(x), done_train))).to(device)
             reward_train = torch.Tensor(reward_train).to(device)
-            state_train = torch.Tensor(np.array(state_train)).to(device)
-            next_state_train = torch.Tensor(np.array(next_state_train)).to(device)
+            state_train = torch.Tensor(state_train).to(device)
+            next_state_train = torch.Tensor(next_state_train).to(device)
 
             with torch.no_grad():
                 target_qvals = agent.get_qvals(next_state_train, target_network)
