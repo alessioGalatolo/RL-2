@@ -245,27 +245,27 @@ def main():
                 target_qvals = agent.get_qvals(next_state_train, target_network)
                 done_train = torch.Tensor(list(map(lambda x: float(x), done_train))).to(device)
                 reward_train = torch.Tensor(reward_train).to(device)
+                
             target_val = reward_train + discount_factor * torch.max(target_qvals) * (1 - done_train)
 
             q_val = agent.get_qvals(state_train, q_network, list(map(lambda x: int(x.item()), action_train)))
-            train_loss = train_loss + torch.pow(target_val - q_val, 2)
+            train_loss = torch.sum(torch.pow(target_val - q_val, 2))
 
             train_loss = train_loss * (1 / batch_size_train)
             train_loss.backward()
             clip_grad_norm_(q_network.parameters(), CLIP_VAL)
             optim_q.step()
-            l = train_loss.detach().cpu().numpy()
-            train_loss_list.append(l)
+            detached_loss = train_loss.detach().cpu().numpy()
+            train_loss_list.append(detached_loss)
 
-            if target_net_counter==C_target:
+            if target_net_counter == C_target:
                 target_net_counter = 1
                 q_net_state_dict = q_network.state_dict()
                 target_network.load_state_dict(q_net_state_dict)
 
             # Update episode reward
             total_episode_reward += reward
-            
-            
+
             # Update state for next iteration
             state = next_state
             t += 1
@@ -312,7 +312,7 @@ def main():
                 reward_running_avg,
                 running_average(episode_number_of_steps, n_ep_running_average)[-1]))
 
-        wandb.log({'loss': l, 'total_episode_reward': total_episode_reward,
+        wandb.log({'loss': detached_loss, 'total_episode_reward': total_episode_reward,
                    'reward_running_avg': reward_running_avg, 'episode': i}, step=i)
 
     save_specs = dict(dir='checkpoints',

@@ -101,17 +101,17 @@ class CleverAgent(RandomAgent):
             actions = self.actions_tensor[actions].unsqueeze(0).to(self.device)
             n_actions = 1
         elif isinstance(actions, list):
-            actions = list(map(lambda action: self.actions_tensor[action].unsqueeze(0).to(self.device), actions))
-            actions = torch.Tensor(actions).to(self.device)
+            actions = list(map(lambda action: self.actions_tensor[action].to(self.device), actions))
+            actions = torch.stack(actions).to(self.device)
             n_actions = 1
         else:
             raise NotImplementedError()
 
-        state = torch.Tensor(state).view(1, self.dim_state, -1).expand(n_actions, self.dim_state, len(state)).to(self.device)
+        state = torch.Tensor(np.array(state)).view(-1, 1, self.dim_state).expand(len(state), n_actions, self.dim_state).to(self.device)
         # Each column is a vector [onehot_action, s_1, ..., s_8]
-        state_action_tensor = torch.cat((actions.view(n_actions, n_actions, -1).expand(-1, -1, state.size(2)), state), dim=1)
-        q_vals = network(state_action_tensor.view(-1, n_actions+self.dim_state))
-        return q_vals.view(n_actions, -1)
+        state_action_tensor = torch.cat((actions.view(-1, n_actions, self.n_actions).expand(len(state), -1, -1), state), dim=2)
+        q_vals = network(state_action_tensor)
+        return q_vals.view(len(state), -1)
 
     def forward(self, state, q_network, deterministic=False):
         if random() > self.epsilon * (1 - deterministic):
