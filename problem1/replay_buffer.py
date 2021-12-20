@@ -1,6 +1,5 @@
 from collections import deque
 from random import sample
-import torch
 
 
 class ReplayBuffer():
@@ -27,11 +26,5 @@ class ReplayBuffer():
         rewards = sample(self.rewards, size)
         next_states = sample(self.next_states, size)
         dones = sample(self.dones, size)
-
-        # states = torch.Tensor(states)
-        # actions = torch.Tensor(actions)
-        # rewards = torch.Tensor(rewards)
-        # next_states = torch.Tensor(next_states)
-        # dones = torch.Tensor(dones)
 
         return states, actions, rewards, next_states, dones

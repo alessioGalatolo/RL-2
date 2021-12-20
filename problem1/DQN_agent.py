@@ -11,15 +11,12 @@
 # Course: EL2805 - Reinforcement Learning - Lab 2 Problem 1
 # Code author: [Alessio Russo - alessior@kth.se]
 # Last update: 20th October 2020, by alessior@kth.se
-
+#
 
 # Load packages
 import numpy as np
-import torch
-from random import random
 
-
-class Agent():
+class Agent(object):
     ''' Base agent class, used as a parent class
 
         Args:
@@ -45,64 +42,14 @@ class Agent():
 class RandomAgent(Agent):
     ''' Agent taking actions uniformly at random, child of the class Agent'''
     def __init__(self, n_actions: int):
-        super().__init__(n_actions)
+        super(RandomAgent, self).__init__(n_actions)
 
     def forward(self, state: np.ndarray) -> int:
+        ''' Compute an action uniformly at random across n_actions possible
+            choices
 
-        # Compute an action uniformly at random across n_actions possible
-        #     choices
-
-        # Returns:
-        #     action (int): the random action
-
-        self.last_action = torch.Tensor(np.random.randint(0, self.n_actions, size=(1,)))
+            Returns:
+                action (int): the random action
+        '''
+        self.last_action = np.random.randint(0, self.n_actions)
         return self.last_action
-
-    def decay_epsilon(self, iteration):
-        pass
-
-
-class CleverAgent(RandomAgent):
-    def __init__(self, n_actions: int, dim_state: int,
-                 device: torch.DeviceObjType, eps_max=0.99, eps_min=0.05,
-                 decay_period=1, decay_method='exponential'):
-        super().__init__(n_actions)
-        self.epsilon = eps_max
-        self.eps_max = eps_max
-        self.eps_min = eps_min
-        self.decay_period = decay_period
-        self.decay_method = decay_method
-        self.n_actions = n_actions
-        self.dim_state = dim_state
-        self.device = device
-
-        self.actions_tensor = torch.eye(n=n_actions,
-                                        m=n_actions).to(self.device)
-
-    def decay_epsilon(self, iteration):
-        new_epsilon = 0
-        if self.decay_method == 'exponential':
-            new_epsilon = (self.eps_min / self.eps_max) ** ((iteration - 1)
-                                                            / (self.decay_period - 1))
-            new_epsilon *= self.eps_max
-        elif self.decay_method == 'linear':
-            new_epsilon = self.eps_max - ((iteration - 1)
-                                          * (self.eps_max - self.eps_min))\
-                                              / (self.decay_period - 1)
-        else:
-            print(f'Decay method {self.decay_method} not recognized')
-        self.epsilon = max(self.eps_min, new_epsilon)
-
-    def get_qvals(self, states, network):
-        q_vals = network(states)
-        return q_vals
-
-    def forward(self, state, q_network, deterministic=False):
-        if random() > self.epsilon * (1 - deterministic):
-            with torch.no_grad():
-                state = torch.Tensor(list(state)).unsqueeze(0).to(self.device)
-                q_vals = self.get_qvals(state, q_network)
-                clever_action = torch.argmax(q_vals)
-            return clever_action
-        random_action = super().forward(state)
-        return random_action
