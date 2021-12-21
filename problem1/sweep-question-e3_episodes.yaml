@@ -1,0 +1,11 @@
+program: problem1/DQN_problem.py
+method: grid
+metric:
+  goal: maximize
+  name: max_avg_reward
+parameters:
+  N_episodes:
+    distribution: categorical
+    values: [100, 300, 500, 700]
+  
+  

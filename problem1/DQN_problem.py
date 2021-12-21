@@ -77,7 +77,7 @@ def main():
     # args = parser.parse_args()
 
     defaults = dict(
-        replay_buffer_size = 15000,  # set in range of 5000-30000
+        replay_buffer_size = 10000,  # set in range of 5000-30000
         batch_size_train = 32,  # set in range 4-128
         lr = 5e-4,  # set in range 1e-3 to 1e-4
         CLIP_VAL = 1.5,  # a value between 0.5 and 2
@@ -86,8 +86,8 @@ def main():
         eps_max = 0.99,
         eps_min = 0.05,
         decay_method = 'exponential',
-        n_hidden_l1 = 128,
-        n_hidden_l2 = 32,
+        n_hidden_l1 = 16,
+        n_hidden_l2 = 16,
         architecture = 'fully-connected'  # 'fully-connected' or 'conv' or 'simple-conv'
     )
     # Initialize WandB
@@ -144,10 +144,10 @@ def main():
                         d_out=n_actions)
     if architecture == 'fully-connected':
         q_network = Model(**model_config)
-    elif architecture == 'conv':
-        q_network = ConvNet(**model_config)
-    elif architecture == 'simple-conv':
-        q_network = SimpleConv(**model_config)
+    # elif architecture == 'conv':
+    #     q_network = ConvNet(**model_config)
+    # elif architecture == 'simple-conv':
+    #     q_network = SimpleConv(**model_config)
     else:
         print('Invalid network architecture, choose from \'fully-connected\' or \'conv\' or \'simple-conv\'')
         quit()
@@ -307,7 +307,8 @@ def main():
                 running_average(episode_number_of_steps, n_ep_running_average)[-1]))
 
         wandb.log({'loss': detached_loss, 'total_episode_reward': total_episode_reward,
-                   'reward_running_avg': reward_running_avg, 'episode': i}, step=i)
+                   'reward_running_avg': reward_running_avg, 'episode': i, 
+                   'total_steps':t}, step=i)
 
     save_specs = dict(dir='checkpoints',
                       filename=f'ckpt_{i}_{run_name}',

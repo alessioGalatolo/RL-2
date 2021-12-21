@@ -1,0 +1,11 @@
+program: problem1/DQN_problem.py
+method: grid
+metric:
+  goal: maximize
+  name: max_avg_reward
+parameters:
+  replay_buffer_size:
+      distribution: categorical
+      values: [5000, 10000, 15000, 20000]
+  
+  
