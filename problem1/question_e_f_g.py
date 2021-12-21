@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 
+
 def question_e(q_network):
-    ...
+    ...  # This question was answered with the sweeps (see sweep-question-e_i.yaml)
 
 
 def question_f(q_network, env):
@@ -104,12 +105,12 @@ def question_g(q_network, env: gym.Env, episodes=50):
 
 
 def main():
-    q_network = torch.load('best_hopeful-sweep-30_.pth', map_location=torch.device('cpu'))
+    q_network = torch.load('neural-network-1.pth', map_location=torch.device('cpu'))
     env = gym.make('LunarLander-v2')
     env.reset()
     # question_e(q_network)
-    question_f(q_network, env)
-    # question_g(q_network, env)
+    # question_f(q_network, env)
+    question_g(q_network, env)
 
 
 if __name__ == "__main__":
