@@ -76,20 +76,27 @@ def main():
     #                     help='Network architecture: \'fully-connected\' or \'conv\' or \'simple-conv\'')
     # args = parser.parse_args()
 
-    config = dict(
-        replay_buffer_size = 10000,  # set in range of 5000-30000
-        batch_size_train = 64,  # set in range 4-128
-        lr = 1e-3,  # set in range 1e-3 to 1e-4
+    defaults = dict(
+        replay_buffer_size = 15000,  # set in range of 5000-30000
+        batch_size_train = 32,  # set in range 4-128
+        lr = 5e-4,  # set in range 1e-3 to 1e-4
         CLIP_VAL = 1.5,  # a value between 0.5 and 2
         N_episodes = 400,  # set in range 100 to 1000
-        discount_factor = 0.8,  # Value of the discount factor
+        discount_factor = 0.7,  # Value of the discount factor
         eps_max = 0.99,
         eps_min = 0.05,
         decay_method = 'exponential',
-        n_hidden_l1 = 16,
-        n_hidden_l2 = 16,
+        n_hidden_l1 = 128,
+        n_hidden_l2 = 32,
         architecture = 'fully-connected'  # 'fully-connected' or 'conv' or 'simple-conv'
     )
+    # Initialize WandB
+    mode = 'online' #if args.WANDB else 'offline'
+    wandb.init(project="Lab2", entity="el2805-rl", config=defaults, mode=mode)
+    run_name = wandb.run.name #if args.WANDB else 'local'
+
+    config = wandb.config
+
     decay_period = int(0.8 * config['N_episodes'])
     start_episode = 0
     LR_decay_period = int(0.9 * config['N_episodes'])
@@ -158,11 +165,7 @@ def main():
     target_network = deepcopy(q_network)
     target_network.to(device)
 
-    # Initialize WandB
-    mode = 'online' #if args.WANDB else 'offline'
-    wandb.init(project="Lab2", entity="el2805-rl", config=config, mode=mode)
-    run_name = wandb.run.name #if args.WANDB else 'local'
-    wandb.watch(q_network)
+    
 
     # Initialize optimizers
     optim_q = torch.optim.Adam(q_network.parameters(), lr=config['lr'])
@@ -322,7 +325,7 @@ def main():
     train_loss_list = np.ravel(train_loss_list)
     print(np.size(train_loss_list))
     plt.plot(train_loss_list)
-    plt.show(block=True)
+    plt.show(block=False)
     plt.savefig('loss.png')
 
     # Plot Rewards and steps
@@ -349,7 +352,7 @@ def main():
     ax[1].set_title('Total number of steps vs Episodes')
     ax[1].legend()
     ax[1].grid(alpha=0.3)
-    plt.show()
+    plt.show(block=False)
 
 
 if __name__ == '__main__':

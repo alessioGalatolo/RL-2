@@ -7,3 +7,4 @@ __pycache__
 *.gif
 problem1/checkpoints
 wandb
+problem1/desktop.ini
