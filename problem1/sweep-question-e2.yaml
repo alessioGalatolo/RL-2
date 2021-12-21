@@ -6,6 +6,6 @@ metric:
 parameters:
   discount_factor:
     distribution: categorical
-    values: [0.5, 0.7, 1]
+    values: [0.4, 0.7, 1]
   
   

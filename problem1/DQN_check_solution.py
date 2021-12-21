@@ -32,7 +32,7 @@ def running_average(x, N):
 
 # Load model
 try:
-    model = torch.load('neural-network-1.pth').cpu()
+    model = torch.load('best_hopeful-sweep-30_.pth', map_location=torch.device('cpu'))
     print('Network model: {}'.format(model))
 except:
     print('File neural-network-1.pth not found!')
@@ -65,6 +65,8 @@ for i in EPISODES:
         q_values = model(torch.tensor([state]))
         _, action = torch.max(q_values, axis=1)
         next_state, reward, done, _ = env.step(action.item())
+
+        # env.render()
 
         # Update episode reward
         total_episode_reward += reward
