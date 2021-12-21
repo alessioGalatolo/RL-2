@@ -19,27 +19,49 @@ def question_f(q_network, env):
     Ys, PIs = np.meshgrid(ys,pis)
     state = torch.zeros((1,8))
     max_Qs = np.zeros((steps,steps))
+    argmax_Qs = np.zeros((steps,steps))
     
     for i_y in range(len(ys)):
         for i_pi in range(len(pis)):
             y, pi = ys[i_y], pis[i_pi]
             state[0,1] = y
             state[0,4] = pi
-            q_val = torch.max(agent_smith.get_qvals(state, q_network))
-            max_Qs[i_y,i_pi] = q_val
+            q_vals = agent_smith.get_qvals(state, q_network)
+            max_Qs[i_y,i_pi] =  torch.max(q_vals)
+            argmax_Qs[i_y,i_pi] = torch.argmax(q_vals).item()
+
+    camera = dict(
+        up=dict(x=0, y=0, z=1),
+        center=dict(x=0, y=0, z=0),
+        eye=dict(x=1.5, y=1.5, z=1.5)
+    )
 
     fig = go.Figure(data=[go.Surface(z=max_Qs, x=ys, y=pis)])
 
-    fig.update_layout(title='Max Qs for the restrictions of the states', autosize=False,
+    fig.update_layout(title='', autosize=False,
                     width=500, height=500,
                 #   margin=dict(l=65, r=50, b=65, t=90)
                 )
     fig.update_layout(scene=dict(
                     xaxis_title='y',
                     yaxis_title='angle',
-                    zaxis_title='Max (Q)'
-                ))
+                    zaxis_title='Max (Q)'),
+                    scene_camera=camera
+                )
     fig.show()
+
+    fig2 = go.Figure(data=[go.Surface(z=argmax_Qs, x=ys, y=pis)])
+    fig2.update_layout(title='', autosize=False,
+                    width=500, height=500,
+                #   margin=dict(l=65, r=50, b=65, t=90)
+                )
+    fig2.update_layout(scene=dict(
+                    xaxis_title='y',
+                    yaxis_title='angle',
+                    zaxis_title='Argmax (Q)'),
+                    scene_camera=camera
+                    )
+    fig2.show()
 
 def question_g(q_network, env: gym.Env, episodes=50):
     from DQN_agent import RandomAgent, CleverAgent
