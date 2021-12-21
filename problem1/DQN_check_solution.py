@@ -18,34 +18,6 @@ import numpy as np
 import gym
 import torch
 from tqdm import trange
-from matplotlib import animation
-import matplotlib.pyplot as plt
-
-# --------- Added by us ------------
-from DQN_problem import legacy_model_loading 
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-q_network, agent = legacy_model_loading(device)
-q_network.load_from_checkpoint(device, dir='checkpoints/genial-grass-35', filename='ckpt_799*')
-visualize = True
-# visualize = False
-save_gif = False
-
-
-def save_frames_as_gif(frames, path='./', filename='gym_animation.gif'):
-
-    plt.figure()
-
-    patch = plt.imshow(frames[0])
-    plt.axis('off')
-
-    def animate(i):
-        patch.set_data(frames[i])
-
-    anim = animation.FuncAnimation(plt.gcf(), animate, 
-                                   frames=len(frames), interval=50)
-    anim.save(path + filename, writer='imagemagick', fps=24)
-# ---------- End added by us ------------
-
 
 def running_average(x, N):
     ''' Function used to compute the running average
@@ -58,13 +30,13 @@ def running_average(x, N):
         y = np.zeros_like(x)
     return y
 
-# # Load model
-# try:
-#     model = torch.load('neural-network-1.pth')
-#     print('Network model: {}'.format(model))
-# except:
-#     print('File neural-network-1.pth not found!')
-#     exit(-1)
+# Load model
+try:
+    model = torch.load('neural-network-1.pth').cpu()
+    print('Network model: {}'.format(model))
+except:
+    print('File neural-network-1.pth not found!')
+    exit(-1)
 
 # Import and initialize Mountain Car Environment
 env = gym.make('LunarLander-v2')
@@ -77,9 +49,6 @@ CONFIDENCE_PASS = 50
 # Reward
 episode_reward_list = []  # Used to store episodes reward
 
-# Anim frames
-frames = []
-
 # Simulate episodes
 print('Checking solution...')
 EPISODES = trange(N_EPISODES, desc='Episode: ', leave=True)
@@ -89,31 +58,19 @@ for i in EPISODES:
     done = False
     state = env.reset()
     total_episode_reward = 0.
-    t = 0
     while not done:
         # Get next state and reward.  The done variable
         # will be True if you reached the goal position,
         # False otherwise
-        # q_values = model(torch.tensor([state]))
-
-        # _, action = torch.max(q_values, axis=1)
-        with torch.no_grad():
-            action = agent.forward(state, q_network, deterministic=True)
-        
-        next_state, reward, done, _ = env.step(int(action.item()))
+        q_values = model(torch.tensor([state]))
+        _, action = torch.max(q_values, axis=1)
+        next_state, reward, done, _ = env.step(action.item())
 
         # Update episode reward
         total_episode_reward += reward
 
-        if visualize:
-            frames.append(env.render(mode="rgb_array"))
-            if done:
-                print(f'{t} steps taken - end reward = {reward} - tot episode reward = {total_episode_reward}')
-
         # Update state for next iteration
         state = next_state
-
-        t += 1
 
     # Append episode reward
     episode_reward_list.append(total_episode_reward)
@@ -133,6 +90,3 @@ if avg_reward - confidence >= CONFIDENCE_PASS:
     print('Your policy passed the test!')
 else:
     print("Your policy did not pass the test! The average reward of your policy needs to be greater than {} with 95% confidence".format(CONFIDENCE_PASS))
-
-if save_gif and visualize:
-    save_frames_as_gif(frames)

@@ -1,6 +1,7 @@
+# authors: Alessio Galatolo & Alfred Nilsson
+
 import numpy as np
-import torch
-import numpy as np
+
 
 class ReplayBuffer():
     def __init__(self, size, dim_state):
@@ -36,11 +37,5 @@ class ReplayBuffer():
         rewards = self.rewards[choices]
         next_states = self.next_states[choices]
         dones = self.dones[choices]
-
-        # states = torch.Tensor(states)
-        # actions = torch.Tensor(actions)
-        # rewards = torch.Tensor(rewards)
-        # next_states = torch.Tensor(next_states)
-        # dones = torch.Tensor(dones)
 
         return states, actions, rewards, next_states, dones

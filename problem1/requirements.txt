@@ -1,57 +1,6 @@
-box2d-py @ file:///D:/bld/box2d-py_1636082545885/work
-brotlipy @ file:///D:/bld/brotlipy_1636012392748/work
-certifi==2021.10.8
-cffi @ file:///D:/bld/cffi_1636046278333/work
-charset-normalizer @ file:///home/conda/feedstock_root/build_artifacts/charset-normalizer_1638815705608/work
-click==7.1.2
-cloudpickle @ file:///home/conda/feedstock_root/build_artifacts/cloudpickle_1631273254894/work
-configparser @ file:///home/conda/feedstock_root/build_artifacts/configparser_1638573090458/work
-cryptography @ file:///D:/bld/cryptography_1637649026447/work
-cycler==0.10.0
-dataclasses @ file:///home/conda/feedstock_root/build_artifacts/dataclasses_1628958434797/work
-docker-pycreds==0.4.0
-fonttools==4.25.0
-future @ file:///D:/bld/future_1635819693853/work
-gitdb @ file:///home/conda/feedstock_root/build_artifacts/gitdb_1635085722655/work
-GitPython @ file:///home/conda/feedstock_root/build_artifacts/gitpython_1632423794953/work
-gym @ file:///D:/bld/gym_1636256379759/work
-idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1609836280497/work
-kiwisolver @ file:///C:/ci/kiwisolver_1612282555033/work
-matplotlib @ file:///C:/ci/matplotlib-suite_1634667159685/work
-mkl-fft==1.3.1
-mkl-random @ file:///C:/ci/mkl_random_1626186184308/work
-mkl-service==2.4.0
-munkres==1.1.4
-numpy @ file:///C:/ci/numpy_and_numpy_base_1634088717532/work
-olefile @ file:///Users/ktietz/demo/mc3/conda-bld/olefile_1629805411829/work
-pathtools==0.1.2
-Pillow==8.4.0
-promise @ file:///D:/bld/promise_1636078288645/work
-protobuf==3.17.2
-psutil @ file:///D:/bld/psutil_1635822843562/work
-pycparser @ file:///home/conda/feedstock_root/build_artifacts/pycparser_1636257122734/work
-pyglet @ file:///D:/bld/pyglet_1618311623508/work
-pyOpenSSL @ file:///home/conda/feedstock_root/build_artifacts/pyopenssl_1633192417276/work
-pyparsing @ file:///tmp/build/80754af9/pyparsing_1635766073266/work
-PySocks @ file:///D:/bld/pysocks_1635862562854/work
-python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work
-PyYAML @ file:///D:/bld/pyyaml_1636139914541/work
-requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1637771257551/work
-sentry-sdk @ file:///home/conda/feedstock_root/build_artifacts/sentry-sdk_1639417874721/work
-shortuuid @ file:///D:/bld/shortuuid_1636643953681/work
-sip==4.19.13
-six @ file:///tmp/build/80754af9/six_1623709665295/work
-smmap @ file:///home/conda/feedstock_root/build_artifacts/smmap_1611376390914/work
-subprocess32 @ file:///home/conda/feedstock_root/build_artifacts/subprocess32_1598615068906/work
-termcolor==1.1.0
-torch==1.10.0
-torchaudio==0.10.0
-torchvision==0.11.1
-tornado @ file:///C:/ci/tornado_1606924294691/work
-tqdm @ file:///tmp/build/80754af9/tqdm_1635330843403/work
-typing-extensions @ file:///tmp/build/80754af9/typing_extensions_1631814937681/work
-urllib3 @ file:///home/conda/feedstock_root/build_artifacts/urllib3_1632350318291/work
-wandb @ file:///home/conda/feedstock_root/build_artifacts/wandb_1637618829935/work
-win-inet-pton @ file:///D:/bld/win_inet_pton_1635832858406/work
-wincertstore==0.2
-yaspin @ file:///home/conda/feedstock_root/build_artifacts/yaspin_1630004424954/work
+gym==0.21.0
+matplotlib==3.5.1
+numpy==1.21.4
+torch==1.10.1
+tqdm==4.62.3
+wandb==0.12.8

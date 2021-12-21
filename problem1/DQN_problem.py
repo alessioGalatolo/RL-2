@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from tqdm import trange, tqdm
 from DQN_agent import RandomAgent, CleverAgent
 from replay_buffer import ReplayBuffer
-from network import Model, ConvNet, SimpleConv
+from network import Model
 from copy import deepcopy
 import wandb
 import argparse
